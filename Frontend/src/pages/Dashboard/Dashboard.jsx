@@ -4,61 +4,75 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Control Center</h1>
-          <p className="text-gray-500 mt-1">Welcome back! Here's your HR overview</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-          <span className="material-symbols-outlined text-xl">add</span>
-          Quick Action
-        </button>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard Overview</h2>
+        <p className="text-gray-500">Welcome back, Admin. Here's what's happening today.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-blue-600">group</span>
-            </div>
-            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">+12%</span>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Card 1 - Total Employees */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Total Employees</p>
+            <span className="material-symbols-outlined text-gray-500">group</span>
           </div>
-          <p className="text-sm font-medium text-gray-500 mt-4">Total Employees</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">847</p>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-gray-900">1,248</span>
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              <span className="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+              12%
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">vs. last month</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center justify-center w-12 h-12 bg-green-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-green-600">trending_up</span>
-            </div>
-            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">+5.2%</span>
+        {/* Card 2 - Monthly Payroll */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Monthly Payroll</p>
+            <span className="material-symbols-outlined text-gray-500">attach_money</span>
           </div>
-          <p className="text-sm font-medium text-gray-500 mt-4">Present Today</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">806</p>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-gray-900">$4.2M</span>
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              <span className="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+              2.4%
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">vs. last month</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center justify-center w-12 h-12 bg-purple-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-purple-600">calendar_today</span>
-            </div>
-            <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">12</span>
+        {/* Card 3 - Active Requests */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Active Requests</p>
+            <span className="material-symbols-outlined text-gray-500">pending_actions</span>
           </div>
-          <p className="text-sm font-medium text-gray-500 mt-4">On Leave</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">24</p>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-gray-900">145</span>
+            <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800">
+              <span className="material-symbols-outlined text-[14px] mr-0.5">trending_down</span>
+              5%
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">vs. last month</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center justify-center w-12 h-12 bg-orange-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-orange-600">assignment</span>
-            </div>
-            <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded-full">3 New</span>
+        {/* Card 4 - Open Positions */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Open Positions</p>
+            <span className="material-symbols-outlined text-gray-500">person_add</span>
           </div>
-          <p className="text-sm font-medium text-gray-500 mt-4">Pending Requests</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">17</p>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-gray-900">12</span>
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">
+              <span className="material-symbols-outlined text-[14px] mr-0.5">remove</span>
+              0%
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">vs. last month</p>
         </div>
       </div>
 

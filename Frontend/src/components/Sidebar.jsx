@@ -1,153 +1,129 @@
-import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import {
-  FiHome,
-  FiUsers,
-  FiClock,
-  FiCalendar,
-  FiDollarSign,
-  FiBriefcase,
-  FiTrendingUp,
-  FiBarChart2,
-  FiSettings,
-  FiChevronLeft,
-  FiChevronRight,
-} from 'react-icons/fi';
 
 const Sidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { user, isAdmin, isHR, isManager } = useAuth();
+  const { user } = useAuth();
 
-  const menuItems = [
+  const mainMenuItems = [
     {
       path: '/dashboard',
-      icon: FiHome,
+      icon: 'dashboard',
       label: 'Dashboard',
-      roles: ['admin', 'hr', 'manager', 'employee'],
     },
     {
       path: '/employees',
-      icon: FiUsers,
+      icon: 'group',
       label: 'Employees',
-      roles: ['admin', 'hr', 'manager'],
     },
     {
       path: '/attendance',
-      icon: FiClock,
+      icon: 'schedule',
       label: 'Attendance',
-      roles: ['admin', 'hr', 'manager', 'employee'],
     },
     {
       path: '/leave/requests',
-      icon: FiCalendar,
+      icon: 'event',
       label: 'Leave Management',
-      roles: ['admin', 'hr', 'manager', 'employee'],
     },
     {
       path: '/payroll',
-      icon: FiDollarSign,
+      icon: 'payments',
       label: 'Payroll',
-      roles: ['admin', 'hr'],
     },
     {
       path: '/recruitment/jobs',
-      icon: FiBriefcase,
+      icon: 'work',
       label: 'Recruitment',
-      roles: ['admin', 'hr'],
     },
     {
       path: '/performance/reviews',
-      icon: FiTrendingUp,
+      icon: 'trending_up',
       label: 'Performance',
-      roles: ['admin', 'hr', 'manager', 'employee'],
-    },
-    {
-      path: '/reports',
-      icon: FiBarChart2,
-      label: 'Reports',
-      roles: ['admin', 'hr', 'manager'],
-    },
-    {
-      path: '/settings',
-      icon: FiSettings,
-      label: 'Settings',
-      roles: ['admin'],
     },
   ];
 
-  const hasAccess = (roles) => {
-    return roles.includes(user?.role);
+  const managementItems = [
+    {
+      path: '/reports',
+      icon: 'bar_chart',
+      label: 'Reports',
+    },
+    {
+      path: '/settings',
+      icon: 'settings',
+      label: 'Settings',
+    },
+  ];
+
+  const isActive = (path) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
-    <div
-      className={`${
-        collapsed ? 'w-20' : 'w-64'
-      } bg-gray-900 text-white transition-all duration-300 flex flex-col`}
-    >
+    <aside className="flex w-72 flex-col border-r border-gray-200 bg-white">
       {/* Logo */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-800">
-        {!collapsed && (
-          <h2 className="text-xl font-bold text-primary-400">HRMS</h2>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          {collapsed ? <FiChevronRight /> : <FiChevronLeft />}
-        </button>
+      <div className="flex h-16 items-center gap-3 px-6 border-b border-gray-200">
+        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+          <span className="material-symbols-outlined text-xl">hexagon</span>
+        </div>
+        <h1 className="text-lg font-bold tracking-tight text-gray-900">HRMS</h1>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-2 px-3">
-          {menuItems.map((item) => {
-            if (!hasAccess(item.roles)) return null;
-
-            const isActive = location.pathname.startsWith(item.path);
-            const Icon = item.icon;
-
-            return (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-primary-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-800'
-                  }`}
-                  title={collapsed ? item.label : ''}
-                >
-                  <Icon className="text-xl flex-shrink-0" />
-                  {!collapsed && (
-                    <span className="font-medium">{item.label}</span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* User Info */}
-      {!collapsed && (
-        <div className="p-4 border-t border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
-              <span className="text-lg font-bold">
-                {user?.name?.charAt(0).toUpperCase()}
-              </span>
+      <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-6">
+        <div className="flex flex-col gap-6">
+          {/* User Profile */}
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.name}</p>
-              <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-gray-900">{user?.name || 'Guest User'}</span>
+              <span className="text-xs text-gray-500 capitalize">{user?.role || 'Guest'}</span>
             </div>
           </div>
+
+          {/* Main Menu */}
+          <nav className="flex flex-col gap-1">
+            <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Main Menu</p>
+            {mainMenuItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                  isActive(item.path)
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xl">{item.icon}</span>
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          {/* Management Section */}
+          <nav className="flex flex-col gap-1">
+            <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Management</p>
+            {managementItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                  isActive(item.path)
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xl">{item.icon}</span>
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            ))}
+          </nav>
         </div>
-      )}
-    </div>
+      </div>
+    </aside>
   );
 };
 

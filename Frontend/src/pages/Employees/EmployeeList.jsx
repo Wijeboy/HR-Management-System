@@ -15,133 +15,101 @@ const EmployeeList = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Employee Directory</h1>
-          <p className="text-gray-500 mt-1">Manage and view all employee information</p>
+          <h3 className="text-2xl font-bold text-gray-900">All Employees</h3>
+          <p className="text-gray-500 mt-1">Manage access, status, and department details.</p>
         </div>
-        <Link
-          to="/employees/add"
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-        >
-          <span className="material-symbols-outlined text-xl">add</span>
-          Add Employee
-        </Link>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-blue-600">group</span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Employees</p>
-              <p className="text-2xl font-bold text-gray-900">847</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 bg-green-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-green-600">person_add</span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">New This Month</p>
-              <p className="text-2xl font-bold text-gray-900">23</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 bg-purple-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-purple-600">domain</span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Departments</p>
-              <p className="text-2xl font-bold text-gray-900">12</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 bg-orange-50 rounded-lg">
-              <span className="material-symbols-outlined text-2xl text-orange-600">calendar_today</span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">On Leave</p>
-              <p className="text-2xl font-bold text-gray-900">24</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
+          <button className="h-10 px-4 rounded-lg border border-gray-200 bg-white text-gray-600 font-medium text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
+            <span className="material-symbols-outlined" style={{fontSize: '20px'}}>file_upload</span>
+            Export
+          </button>
+          <Link
+            to="/employees/add"
+            className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all"
+          >
+            <span className="material-symbols-outlined" style={{fontSize: '20px'}}>add</span>
+            Add Employee
+          </Link>
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                search
-              </span>
-              <input
-                type="text"
-                placeholder="Search by name, ID, or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+            <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>filter_list</span>
+            <span className="font-medium">Filter By:</span>
           </div>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <option>All Departments</option>
-            <option>Engineering</option>
-            <option>Sales</option>
-            <option>HR</option>
-            <option>Finance</option>
-          </select>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <option>All Status</option>
-            <option>Active</option>
-            <option>On Leave</option>
-            <option>Inactive</option>
-          </select>
+          <div className="relative">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
+              Department
+              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
+            </button>
+          </div>
+          <div className="relative">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
+              Status
+              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
+            </button>
+          </div>
+          <div className="relative">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
+              Role
+              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
+            </button>
+          </div>
+          <div className="relative">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
+              Location
+              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
+            </button>
+          </div>
+          <div className="ml-auto">
+            <button className="text-sm text-indigo-600 font-medium hover:underline">Clear all</button>
+          </div>
         </div>
       </div>
 
       {/* Employee Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Employee
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-gray-200">
+                <th className="p-4 pl-6 w-12">
+                  <input className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" type="checkbox" />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Employee ID
+                <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Employee Name
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Department
+                <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  ID
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Department
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right pr-6">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {employees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={employee.id} className="group hover:bg-slate-50 transition-colors">
+                  <td className="p-4 pl-6">
+                    <input className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" type="checkbox" />
+                  </td>
+                  <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full font-semibold">
+                      <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold ring-2 ring-white">
                         {employee.name.split(' ').map(n => n[0]).join('')}
                       </div>
                       <div>
@@ -150,36 +118,47 @@ const EmployeeList = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {employee.id}
+                  <td className="p-4 text-sm text-gray-600 font-mono">
+                    #{employee.id}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {employee.department}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="p-4 text-sm text-gray-600">
                     {employee.role}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                  <td className="p-4">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                      employee.department === 'Engineering' 
+                        ? 'bg-purple-50 text-purple-700 border-purple-100' 
+                        : employee.department === 'Sales'
+                        ? 'bg-blue-50 text-blue-700 border-blue-100'
+                        : employee.department === 'HR'
+                        ? 'bg-green-50 text-green-700 border-green-100'
+                        : 'bg-orange-50 text-orange-700 border-orange-100'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        employee.department === 'Engineering'
+                          ? 'bg-purple-500'
+                          : employee.department === 'Sales'
+                          ? 'bg-blue-500'
+                          : employee.department === 'HR'
+                          ? 'bg-green-500'
+                          : 'bg-orange-500'
+                      }`}></span>
+                      {employee.department}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${
                       employee.status === 'Active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-orange-100 text-orange-700'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                        : 'bg-amber-50 text-amber-700 border-amber-100'
                     }`}>
                       {employee.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-gray-100">
-                        <span className="material-symbols-outlined text-xl">visibility</span>
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-gray-100">
-                        <span className="material-symbols-outlined text-xl">edit</span>
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100">
-                        <span className="material-symbols-outlined text-xl">delete</span>
-                      </button>
-                    </div>
+                  <td className="p-4 text-right pr-6">
+                    <button className="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded-md hover:bg-gray-100">
+                      <span className="material-symbols-outlined" style={{fontSize: '20px'}}>more_vert</span>
+                    </button>
                   </td>
                 </tr>
               ))}

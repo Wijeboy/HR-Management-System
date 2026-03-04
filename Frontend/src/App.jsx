@@ -67,7 +67,7 @@ function App() {
           <Route element={<PrivateRoute />}>
             <Route element={<MainLayout />}>
               {/* Dashboard */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
 
               {/* Employees */}

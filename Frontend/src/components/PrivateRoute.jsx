@@ -1,17 +1,7 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Outlet } from 'react-router-dom';
 
-const PrivateRoute = ({ allowedRoles }) => {
-  const { isAuthenticated, user } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+const PrivateRoute = () => {
+  // No authentication check - allow access to all routes for testing
   return <Outlet />;
 };
 
