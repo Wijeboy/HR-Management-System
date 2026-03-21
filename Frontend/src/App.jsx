@@ -27,6 +27,7 @@ import AttendanceReports from './pages/Attendance/AttendanceReports';
 import LeaveRequests from './pages/Leave/LeaveRequests';
 import LeaveBalance from './pages/Leave/LeaveBalance';
 import ApplyLeave from './pages/Leave/ApplyLeave';
+import HRLeaveApproval from './pages/Leave/HRLeaveApproval';
 
 // Payroll Pages
 import PayrollList from './pages/Payroll/PayrollList';
@@ -76,14 +77,22 @@ function App() {
               <Route path="/employees/add" element={<AddEmployee />} />
               <Route path="/employees/edit/:id" element={<EditEmployee />} />
 
-              {/* Attendance */}
+              {/* Attendance:
+                  - Employee role  → AttendanceList  (check-in/out + own history)
+                  - HR/Admin/Manager role → AttendanceReports (daily overview)
+                  Both routes are kept; the sidebar/layout can show the right one
+                  based on user role, or you can use a role-guard wrapper. */}
               <Route path="/attendance" element={<AttendanceList />} />
               <Route path="/attendance/reports" element={<AttendanceReports />} />
 
-              {/* Leave */}
+              {/* Leave:
+                  - Employee → /leave/requests  (balance cards + history)
+                  - HR       → /leave/manage    (approval inbox)
+                  - Apply form is shared (employee only in practice) */}
               <Route path="/leave/requests" element={<LeaveRequests />} />
               <Route path="/leave/balance" element={<LeaveBalance />} />
               <Route path="/leave/apply" element={<ApplyLeave />} />
+              <Route path="/leave/manage" element={<HRLeaveApproval />} />
 
               {/* Payroll */}
               <Route path="/payroll" element={<PayrollList />} />
