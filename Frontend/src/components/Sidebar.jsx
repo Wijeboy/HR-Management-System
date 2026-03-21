@@ -17,12 +17,16 @@ const Sidebar = () => {
       label: 'Employees',
     },
     {
-      path: '/attendance',
+      // Employee sees: /attendance (check-in/out page + own history)
+      // HR/Admin/Manager sees: /attendance/reports (daily overview of all employees)
+      path: user?.role === 'employee' ? '/attendance' : '/attendance/reports',
       icon: 'schedule',
       label: 'Attendance',
     },
     {
-      path: '/leave/requests',
+      // Employee sees: /leave/requests (his own balance cards + his leave history)
+      // HR sees: /leave/manage (approval inbox with all employee requests)
+      path: user?.role === 'employee' ? '/leave/requests' : '/leave/manage',
       icon: 'event',
       label: 'Leave Management',
     },
@@ -57,6 +61,26 @@ const Sidebar = () => {
   ];
 
   const isActive = (path) => {
+    // For attendance: highlight the tab correctly for both roles
+    if (path === '/attendance' || path === '/attendance/reports') {
+      return (
+        location.pathname === '/attendance' ||
+        location.pathname.startsWith('/attendance')
+      );
+    }
+    // For leave: highlight the tab correctly for both roles
+    if (
+      path === '/leave/requests' ||
+      path === '/leave/manage'
+    ) {
+      return (
+        location.pathname === '/leave/requests' ||
+        location.pathname === '/leave/manage' ||
+        location.pathname === '/leave/apply' ||
+        location.pathname === '/leave/balance' ||
+        location.pathname.startsWith('/leave')
+      );
+    }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
@@ -89,7 +113,7 @@ const Sidebar = () => {
             <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Main Menu</p>
             {mainMenuItems.map((item) => (
               <Link
-                key={item.path}
+                key={item.label}
                 to={item.path}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
                   isActive(item.path)
