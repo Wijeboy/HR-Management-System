@@ -17,15 +17,15 @@ const Sidebar = () => {
       label: 'Employees',
     },
     {
-      // Employee sees: /attendance (check-in/out page + own history)
-      // HR/Admin/Manager sees: /attendance/reports (daily overview of all employees)
+      // Employee → /attendance (check-in/out + own history)
+      // HR / Admin / Manager → /attendance/reports (daily overview of all employees)
       path: user?.role === 'employee' ? '/attendance' : '/attendance/reports',
       icon: 'schedule',
       label: 'Attendance',
     },
     {
-      // Employee sees: /leave/requests (his own balance cards + his leave history)
-      // HR sees: /leave/manage (approval inbox with all employee requests)
+      // Employee → /leave/requests (balance cards + own history)
+      // HR → /leave/manage (approval inbox)
       path: user?.role === 'employee' ? '/leave/requests' : '/leave/manage',
       icon: 'event',
       label: 'Leave Management',
@@ -36,7 +36,9 @@ const Sidebar = () => {
       label: 'Payroll',
     },
     {
-      path: '/recruitment/jobs',
+      // Employee → /recruitment/applicants (job postings + apply + meeting calendar)
+      // HR / Admin / Manager → /recruitment/jobs (job vacancy portal + manage applicants)
+      path: user?.role === 'employee' ? '/recruitment/applicants' : '/recruitment/jobs',
       icon: 'work',
       label: 'Recruitment',
     },
@@ -61,25 +63,17 @@ const Sidebar = () => {
   ];
 
   const isActive = (path) => {
-    // For attendance: highlight the tab correctly for both roles
+    // Attendance tab: highlight for both role paths
     if (path === '/attendance' || path === '/attendance/reports') {
-      return (
-        location.pathname === '/attendance' ||
-        location.pathname.startsWith('/attendance')
-      );
+      return location.pathname.startsWith('/attendance');
     }
-    // For leave: highlight the tab correctly for both roles
-    if (
-      path === '/leave/requests' ||
-      path === '/leave/manage'
-    ) {
-      return (
-        location.pathname === '/leave/requests' ||
-        location.pathname === '/leave/manage' ||
-        location.pathname === '/leave/apply' ||
-        location.pathname === '/leave/balance' ||
-        location.pathname.startsWith('/leave')
-      );
+    // Leave tab: highlight for both role paths
+    if (path === '/leave/requests' || path === '/leave/manage') {
+      return location.pathname.startsWith('/leave');
+    }
+    // Recruitment tab: highlight for both role paths
+    if (path === '/recruitment/applicants' || path === '/recruitment/jobs') {
+      return location.pathname.startsWith('/recruitment');
     }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
