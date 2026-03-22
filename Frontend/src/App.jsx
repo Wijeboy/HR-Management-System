@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
+import { getDefaultRouteForRole } from './utils/roleRouting';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -53,6 +54,11 @@ import Settings from './pages/Settings/Settings';
 // 404 Page
 import NotFound from './pages/NotFound';
 
+function RoleHomeRedirect() {
+  const { user } = useAuth();
+  return <Navigate to={getDefaultRouteForRole(user?.role)} replace />;
+}
+
 function App() {
   return (
     <Router>
@@ -68,7 +74,7 @@ function App() {
           <Route element={<PrivateRoute />}>
             <Route element={<MainLayout />}>
               {/* Dashboard */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<RoleHomeRedirect />} />
               <Route path="/dashboard" element={<Dashboard />} />
 
               {/* Employees */}

@@ -1,5 +1,7 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
+import { getDefaultRouteForRole } from '../utils/roleRouting';
 
 const AuthContext = createContext(null);
 
@@ -10,27 +12,56 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    // Rehydrate from localStorage on mount
-    try {
-      const stored = localStorage.getItem('user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const login = (userData) => {
+  useEffect(() => {
+    const bootstrapAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        const res = await authService.getCurrentUser();
+        const currentUser = res?.data?.user || null;
+        if (currentUser) {
+          setUser(currentUser);
+          localStorage.setItem('user', JSON.stringify(currentUser));
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    bootstrapAuth();
+  }, []);
+
+  const login = (userData, token) => {
+    if (token) localStorage.setItem('token', token);
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    navigate('/dashboard');
+    navigate(getDefaultRouteForRole(userData?.role), { replace: true });
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Ignore logout request failures and clear local state anyway.
+    }
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setUser(null);
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const updateUser = (userData) => {
@@ -47,6 +78,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     isAuthenticated: !!user,
+    isLoading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -13,7 +13,7 @@ const formatDateRange = (startDate, endDate) => {
 // ─── View Document Modal ──────────────────────────────────────────────────────
 const ViewModal = ({ record, onClose }) => {
   const docUrl = record.supportingDocument
-    ? `http://localhost:5000/uploads/${record.supportingDocument}`
+    ? `http://localhost:5050/uploads/${record.supportingDocument}`
     : null;
   const isImage = record.documentMimeType?.startsWith('image/');
   const isPdf = record.documentMimeType === 'application/pdf';

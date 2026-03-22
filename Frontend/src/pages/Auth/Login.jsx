@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -27,18 +28,24 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const u = dummyUsers.find((d) => d.email === email && d.password === password);
-    if (u) {
-      login({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        department: u.department,
-        employeeId: u.employeeId,  // ← required for attendance & leave API calls
+    try {
+      const response = await authService.login({
+        email,
+        password,
+        role: selectedRole,
       });
-    } else {
-      setError('Invalid email or password');
+
+      const token = response?.data?.token;
+      const user = response?.data?.user;
+
+      if (!token || !user) {
+        setError('Login response is invalid. Please try again.');
+        return;
+      }
+
+      login(user, token);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Invalid email or password');
     }
   };
 
