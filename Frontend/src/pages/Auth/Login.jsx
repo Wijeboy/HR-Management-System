@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { authService } from '../../services/authService';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,8 +10,6 @@ const Login = () => {
   const [error, setError] = useState('');
   const { login } = useAuth();
 
-  // Dummy credentials — aligned with backend/data/dummyData.js
-  // employeeId must match dummyEmployees[].id in dummyData.js
   const dummyUsers = [
     { role: 'admin',    email: 'admin@company.com',    password: 'admin123',    name: 'Admin User',         department: 'IT',               id: 'user_admin_001',    employeeId: 'EMP001' },
     { role: 'hr',       email: 'hr@company.com',       password: 'hr123',       name: 'HR Manager',         department: 'Human Resources',  id: 'user_hr_001',       employeeId: 'EMP002' },
@@ -25,36 +22,31 @@ const Login = () => {
     if (u) { setEmail(u.email); setPassword(u.password); setSelectedRole(u.role); }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    try {
-      const payload = {
-        email,
-        password,
-      };
-      if (selectedRole) payload.role = selectedRole;
 
-      const response = await authService.login(payload);
+    const u = dummyUsers.find(
+      (d) => d.email === email.trim() && d.password === password
+    );
 
-      const token = response?.data?.token;
-      const user = response?.data?.user;
-
-      if (!token || !user) {
-        setError('Login response is invalid. Please try again.');
-        return;
-      }
-
-      login(user, token);
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Invalid email or password');
+    if (u) {
+      login({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        department: u.department,
+        employeeId: u.employeeId,
+      });
+    } else {
+      setError('Invalid email or password');
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-[440px] bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        {/* Header */}
         <div className="pt-8 pb-6 px-8 flex flex-col items-center">
           <div className="mb-6 flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600/10 text-indigo-600">
             <span className="material-symbols-outlined text-[32px]">dataset</span>
@@ -63,7 +55,6 @@ const Login = () => {
           <p className="mt-2 text-sm text-gray-600 text-center">Enter your credentials to access your workspace</p>
         </div>
 
-        {/* Quick Login */}
         <div className="px-8 pb-4">
           <p className="text-xs font-medium text-gray-500 mb-3 text-center">Quick Login (Demo Accounts)</p>
           <div className="grid grid-cols-2 gap-2">
@@ -76,7 +67,6 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Form */}
         <form className="px-8 pb-8 space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-900" htmlFor="role">Select Role</label>
@@ -97,7 +87,7 @@ const Login = () => {
                 <span className="material-symbols-outlined text-[20px]">mail</span>
               </div>
               <input className="block w-full rounded-lg border-gray-300 py-2.5 pl-10 pr-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-indigo-600 focus:ring-indigo-600 text-sm"
-                id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com or EMP006 or Pramod" required />
+                id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" required />
             </div>
           </div>
 
