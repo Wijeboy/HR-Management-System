@@ -7,7 +7,9 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const { requireAuth } = require('./middleware/authMiddleware');
+const { seedDefaultUsers } = require('./services/userSeedService');
 
 const app = express();
 
@@ -26,17 +28,25 @@ app.use('/uploads', express.static('uploads'));
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/users', requireAuth, userRoutes);
 app.use('/api/attendance', requireAuth, attendanceRoutes);
 app.use('/api/leave', requireAuth, leaveRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
 
 // ─── DB Connection ────────────────────────────────────────────────────────────
-// TODO: Replace with real MongoDB URI from .env when integrating final backend
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/hrms';
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI is required. Set your MongoDB Atlas URI in Backend/.env');
+  process.exit(1);
+}
 
 mongoose
   .connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
+  .then(async () => {
+    console.log('✅ MongoDB connected');
+    await seedDefaultUsers();
+    console.log('✅ Default DB users verified');
+  })
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // ─── Start Server ─────────────────────────────────────────────────────────────

@@ -1,23 +1,27 @@
 const Attendance = require('../models/Attendance');
-const { dummyEmployees, dummyDepartments } = require('../data/dummyData');
+const User = require('../models/User');
 
 /**
  * AttendanceService
  * -----------------
  * All business logic for attendance management.
- * When integrating real backend: replace dummyEmployees with DB queries.
  */
 
 const WORK_START_HOUR = 9;          // 9:00 AM
 const LATE_THRESHOLD_MINUTES = 30;  // 9:30 AM = late
+
+const getActiveUsers = async (department = null) => {
+  const query = { isActive: true };
+  if (department) query.department = department;
+  return User.find(query).select('employeeId name department');
+};
 
 /**
  * Get or create today's attendance record for an employee.
  * Used when employee checks in.
  */
 const checkIn = async (employeeId) => {
-  // TODO: Replace with real DB lookup: const emp = await Employee.findById(employeeId)
-  const emp = dummyEmployees.find((e) => e.id === employeeId);
+  const emp = await User.findOne({ employeeId, isActive: true }).select('name department');
   if (!emp) throw new Error('Employee not found');
 
   const today = new Date();
@@ -154,19 +158,16 @@ const getTodayStatus = async (employeeId) => {
 const getDailyAttendance = async (dateStr, department = null, status = null, page = 1, limit = 10) => {
   let query = { date: dateStr };
   if (department) query.department = department;
-  if (status) query.status = status;
 
   const checkedInRecords = await Attendance.find(query);
 
-  // Get all employees (TODO: replace with Employee.findAll())
-  let allEmployees = [...dummyEmployees];
-  if (department) allEmployees = allEmployees.filter((e) => e.department === department);
+  const allEmployees = await getActiveUsers(department);
 
   // Merge: employees without records are "absent" (unless on leave – handled via LeaveRequest)
   const mergedMap = {};
   allEmployees.forEach((emp) => {
-    mergedMap[emp.id] = {
-      employeeId: emp.id,
+    mergedMap[emp.employeeId] = {
+      employeeId: emp.employeeId,
       employeeName: emp.name,
       department: emp.department,
       checkIn: null,
@@ -207,13 +208,29 @@ const getDailyAttendance = async (dateStr, department = null, status = null, pag
  * on_leave  = has approved leave for that date
  */
 const getDailyStats = async (dateStr, approvedLeaveEmployeeIds = []) => {
-  const records = await Attendance.find({ date: dateStr });
-  const totalEmployees = dummyEmployees.length; // TODO: Employee.countDocuments()
+  const activeUsers = await User.find({ isActive: true }).select('employeeId');
+  const activeEmployeeIds = activeUsers.map((u) => u.employeeId);
+  const activeEmployeeSet = new Set(activeEmployeeIds);
+  const records = await Attendance.find({ date: dateStr, employeeId: { $in: activeEmployeeIds } });
+  const totalEmployees = activeEmployeeIds.length;
+
+  if (totalEmployees === 0) {
+    return {
+      total: 0,
+      present: 0,
+      presentPct: '0.0',
+      absent: 0,
+      absentPct: '0.0',
+      onLeave: 0,
+      onLeavePct: '0.0',
+      late: 0,
+      latePct: '0.0',
+    };
+  }
 
   const presentCount = records.filter((r) => r.status === 'present').length;
   const lateCount = records.filter((r) => r.status === 'late').length;
-  const checkedInIds = records.map((r) => r.employeeId);
-  const onLeaveCount = approvedLeaveEmployeeIds.length;
+  const onLeaveCount = new Set(approvedLeaveEmployeeIds.filter((id) => activeEmployeeSet.has(id))).size;
   const absentCount = totalEmployees - presentCount - lateCount - onLeaveCount;
 
   const pct = (n) => ((n / totalEmployees) * 100).toFixed(1);
@@ -231,6 +248,10 @@ const getDailyStats = async (dateStr, approvedLeaveEmployeeIds = []) => {
   };
 };
 
+const getDepartments = async () => {
+  return User.distinct('department', { isActive: true });
+};
+
 module.exports = {
   checkIn,
   checkOut,
@@ -239,4 +260,5 @@ module.exports = {
   getTodayStatus,
   getDailyAttendance,
   getDailyStats,
+  getDepartments,
 };

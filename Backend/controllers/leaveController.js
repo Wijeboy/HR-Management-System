@@ -133,8 +133,10 @@ const getRejected = async (req, res) => {
 const approveLeave = async (req, res) => {
   try {
     const { hrId } = req.body;
-    // TODO: When real auth is added, get hrId from req.user.id
-    const hrIdToUse = hrId || 'user_hr_001';
+    const hrIdToUse = req.user?.id || hrId;
+    if (!hrIdToUse) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
     const request = await leaveService.approveLeave(req.params.id, hrIdToUse);
     res.json({ success: true, request });
   } catch (err) {
@@ -149,7 +151,10 @@ const approveLeave = async (req, res) => {
 const rejectLeave = async (req, res) => {
   try {
     const { hrId, comment } = req.body;
-    const hrIdToUse = hrId || 'user_hr_001';
+    const hrIdToUse = req.user?.id || hrId;
+    if (!hrIdToUse) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
     const request = await leaveService.rejectLeave(req.params.id, hrIdToUse, comment || '');
     res.json({ success: true, request });
   } catch (err) {

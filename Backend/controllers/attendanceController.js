@@ -1,6 +1,5 @@
 const attendanceService = require('../services/attendanceService');
 const leaveService = require('../services/leaveService');
-const { dummyDepartments } = require('../data/dummyData');
 
 /**
  * POST /api/attendance/checkin
@@ -113,7 +112,8 @@ const getDailyStats = async (req, res) => {
     const dateStr = req.query.date || new Date().toISOString().split('T')[0];
     const approvedLeaveIds = await leaveService.getApprovedLeaveEmployeeIdsForDate(dateStr);
     const stats = await attendanceService.getDailyStats(dateStr, approvedLeaveIds);
-    res.json({ stats, departments: dummyDepartments });
+    const departments = await attendanceService.getDepartments();
+    res.json({ stats, departments });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

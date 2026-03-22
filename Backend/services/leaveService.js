@@ -1,7 +1,8 @@
 const LeaveRequest = require('../models/LeaveRequest');
 const LeaveBalance = require('../models/LeaveBalance');
 const Notification = require('../models/Notification');
-const { dummyEmployees, defaultLeaveBalances } = require('../data/dummyData');
+const User = require('../models/User');
+const { defaultLeaveBalances } = require('../data/dummyData');
 
 /**
  * LeaveService
@@ -43,7 +44,7 @@ const getOrCreateBalance = async (employeeId) => {
  * Submit a new leave request.
  */
 const submitLeave = async (employeeId, data, file) => {
-  const emp = dummyEmployees.find((e) => e.id === employeeId);
+  const emp = await User.findOne({ employeeId, isActive: true }).select('id name department');
   if (!emp) throw new Error('Employee not found');
 
   const { leaveType, startDate, endDate, reason } = data;
@@ -80,15 +81,17 @@ const submitLeave = async (employeeId, data, file) => {
   const request = await LeaveRequest.create(leaveData);
 
   // Notify all HR managers
-  // TODO: Replace with real HR user IDs from DB: User.find({ role: 'hr' })
-  const hrUserId = 'user_hr_001';
-  await Notification.create({
-    recipientId: hrUserId,
-    recipientRole: 'hr',
-    message: `${emp.name} submitted a ${leaveType} leave request (${duration} day${duration > 1 ? 's' : ''}).`,
-    type: 'leave_submitted',
-    relatedLeaveId: request._id.toString(),
-  });
+  const hrUsers = await User.find({ role: 'hr', isActive: true }).select('id role');
+  if (hrUsers.length > 0) {
+    const notifications = hrUsers.map((hr) => ({
+      recipientId: hr.id,
+      recipientRole: 'hr',
+      message: `${emp.name} submitted a ${leaveType} leave request (${duration} day${duration > 1 ? 's' : ''}).`,
+      type: 'leave_submitted',
+      relatedLeaveId: request._id.toString(),
+    }));
+    await Notification.insertMany(notifications);
+  }
 
   return request;
 };
@@ -239,8 +242,9 @@ const approveLeave = async (leaveId, hrId) => {
   await request.save();
 
   // Notify employee
+  const employeeUser = await User.findOne({ employeeId: request.employeeId, isActive: true }).select('id');
   await Notification.create({
-    recipientId: request.employeeId,
+    recipientId: employeeUser?.id || request.employeeId,
     recipientRole: 'employee',
     message: `Your ${request.leaveType} leave request has been approved.`,
     type: 'leave_approved',
@@ -265,8 +269,9 @@ const rejectLeave = async (leaveId, hrId, comment = '') => {
   await request.save();
 
   // Notify employee
+  const employeeUser = await User.findOne({ employeeId: request.employeeId, isActive: true }).select('id');
   await Notification.create({
-    recipientId: request.employeeId,
+    recipientId: employeeUser?.id || request.employeeId,
     recipientRole: 'employee',
     message: `Your ${request.leaveType} leave request has been rejected.${comment ? ' Reason: ' + comment : ''}`,
     type: 'leave_rejected',

@@ -18,4 +18,13 @@ const requireAuth = (req, res, next) => {
   }
 };
 
-module.exports = { requireAuth };
+const requireRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user?.role || !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    return next();
+  };
+};
+
+module.exports = { requireAuth, requireRoles };

@@ -6,7 +6,7 @@ import { authService } from '../../services/authService';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('admin');
+  const [selectedRole, setSelectedRole] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -29,11 +29,13 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-      const response = await authService.login({
+      const payload = {
         email,
         password,
-        role: selectedRole,
-      });
+      };
+      if (selectedRole) payload.role = selectedRole;
+
+      const response = await authService.login(payload);
 
       const token = response?.data?.token;
       const user = response?.data?.user;
@@ -80,6 +82,7 @@ const Login = () => {
             <label className="block text-sm font-medium text-gray-900" htmlFor="role">Select Role</label>
             <select className="block w-full rounded-lg border-gray-300 bg-white py-2.5 pl-3 pr-10 text-gray-900 shadow-sm focus:border-indigo-600 focus:ring-indigo-600 text-sm"
               id="role" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
+              <option value="">Auto detect from account</option>
               <option value="employee">Employee</option>
               <option value="manager">Manager</option>
               <option value="hr">HR Admin</option>
@@ -88,13 +91,13 @@ const Login = () => {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-900" htmlFor="email">Email Address</label>
+            <label className="block text-sm font-medium text-gray-900" htmlFor="email">Email / Employee ID / Name</label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-600">
                 <span className="material-symbols-outlined text-[20px]">mail</span>
               </div>
               <input className="block w-full rounded-lg border-gray-300 py-2.5 pl-10 pr-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-indigo-600 focus:ring-indigo-600 text-sm"
-                id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" required />
+                id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com or EMP006 or Pramod" required />
             </div>
           </div>
 

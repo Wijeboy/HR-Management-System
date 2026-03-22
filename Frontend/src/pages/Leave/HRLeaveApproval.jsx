@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { leaveService } from '../../services/leaveService';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDateRange = (startDate, endDate) => {
@@ -110,8 +111,8 @@ const Pagination = ({ page, totalPages, total, onPageChange }) => (
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const HRLeaveApproval = () => {
-  // HR user id - TODO: replace with real auth user id
-  const HR_ID = 'user_hr_001';
+  const { user } = useAuth();
+  const HR_ID = user?.id;
 
   const [activeTab, setActiveTab] = useState('pending');
 

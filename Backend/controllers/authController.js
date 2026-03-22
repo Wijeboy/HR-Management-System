@@ -1,8 +1,11 @@
 const jwt = require('jsonwebtoken');
-const { dummyUsers } = require('../data/dummyData');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me_in_production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const sanitizeUser = (user) => ({
   id: user.id,
@@ -28,13 +31,26 @@ const login = async (req, res) => {
     const { email, password, role } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res.status(400).json({ message: 'Login ID and password are required' });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const user = dummyUsers.find((u) => u.email.toLowerCase() === normalizedEmail);
+    const loginId = String(email).trim();
+    const normalizedEmail = loginId.toLowerCase();
+    const user = await User.findOne({
+      isActive: true,
+      $or: [
+        { email: normalizedEmail },
+        { employeeId: loginId.toUpperCase() },
+        { name: { $regex: `^${escapeRegex(loginId)}$`, $options: 'i' } },
+      ],
+    });
 
-    if (!user || user.password !== password) {
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -51,7 +67,7 @@ const login = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
-    const user = dummyUsers.find((u) => u.id === req.user.id);
+    const user = await User.findOne({ id: req.user.id, isActive: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
     return res.json({ user: sanitizeUser(user) });
   } catch (err) {

@@ -1,19 +1,120 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { userService } from '../../services/userService';
 
 const EmployeeList = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const employees = [
-    { id: 'EMP-0001', name: 'Sarah Williams', department: 'Engineering', role: 'Senior Developer', email: 'sarah.w@company.com', status: 'Active' },
-    { id: 'EMP-0002', name: 'John Davis', department: 'Sales', role: 'Sales Manager', email: 'john.d@company.com', status: 'Active' },
-    { id: 'EMP-0003', name: 'Michael Johnson', department: 'HR', role: 'HR Specialist', email: 'michael.j@company.com', status: 'Active' },
-    { id: 'EMP-0004', name: 'Emily Chen', department: 'Finance', role: 'Accountant', email: 'emily.c@company.com', status: 'Active' },
-    { id: 'EMP-0005', name: 'Robert Taylor', department: 'Engineering', role: 'DevOps Engineer', email: 'robert.t@company.com', status: 'On Leave' },
-  ];
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await userService.getUsers();
+        setEmployees(res?.data?.users || []);
+      } catch (err) {
+        setError(err?.response?.data?.message || 'Failed to load users');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((employee) => {
+      const matchesSearch = `${employee.name} ${employee.email} ${employee.employeeId} ${employee.jobTitle}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesDepartment = departmentFilter === 'All' || employee.department === departmentFilter;
+      const matchesStatus = statusFilter === 'All' || employee.status === statusFilter;
+      return matchesSearch && matchesDepartment && matchesStatus;
+    });
+  }, [employees, searchTerm, departmentFilter, statusFilter]);
+
+  const uniqueDepartments = useMemo(() => {
+    return ['All', ...Array.from(new Set(employees.map((e) => e.department)))];
+  }, [employees]);
+
+  const removeEmployee = async (employeeId) => {
+    try {
+      await userService.deleteUser(employeeId);
+      setEmployees((prev) => prev.filter((employee) => employee.employeeId !== employeeId));
+      setSuccess(`User ${employeeId} deleted.`);
+      setTimeout(() => setSuccess(''), 2500);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to delete user');
+    }
+  };
+
+  const resetPassword = async (employeeId) => {
+    const newPassword = window.prompt(`Enter new password for ${employeeId}`);
+    if (!newPassword) return;
+    if (newPassword.length < 4) {
+      setError('Password must be at least 4 characters.');
+      return;
+    }
+
+    try {
+      await userService.updateUser(employeeId, { password: newPassword });
+      setSuccess(`Password reset successful for ${employeeId}.`);
+      setTimeout(() => setSuccess(''), 2500);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to reset password');
+    }
+  };
+
+  const toggleStatus = async (employeeId, currentStatus) => {
+    const nextStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+    try {
+      const res = await userService.updateUser(employeeId, { status: nextStatus });
+      const updatedUser = res?.data?.user;
+      setEmployees((prev) => prev.map((emp) => (emp.employeeId === employeeId ? { ...emp, ...updatedUser } : emp)));
+      setSuccess(`Status updated to ${nextStatus} for ${employeeId}.`);
+      setTimeout(() => setSuccess(''), 2500);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setDepartmentFilter('All');
+    setStatusFilter('All');
+  };
+
+  const exportCsv = () => {
+    const header = 'ID,Name,Email,Department,Role,Status';
+    const rows = filteredEmployees.map((employee) => [
+      employee.id,
+      employee.employeeId,
+      employee.name,
+      employee.email,
+      employee.department,
+      employee.jobTitle,
+      employee.status,
+    ].join(','));
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'employees.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
+      {error && <div className="text-sm text-red-600">{error}</div>}
+      {success && <div className="text-sm text-green-600">{success}</div>}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -21,7 +122,7 @@ const EmployeeList = () => {
           <p className="text-gray-500 mt-1">Manage access, status, and department details.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="h-10 px-4 rounded-lg border border-gray-200 bg-white text-gray-600 font-medium text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
+          <button onClick={exportCsv} className="h-10 px-4 rounded-lg border border-gray-200 bg-white text-gray-600 font-medium text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
             <span className="material-symbols-outlined" style={{fontSize: '20px'}}>file_upload</span>
             Export
           </button>
@@ -29,7 +130,7 @@ const EmployeeList = () => {
             to="/employees/add"
             className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all"
           >
-            <span className="material-symbols-outlined" style={{fontSize: '20px'}}>add</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
             Add Employee
           </Link>
         </div>
@@ -38,36 +139,43 @@ const EmployeeList = () => {
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full md:w-auto md:flex-1 md:max-w-sm">
+            <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400" style={{fontSize: '18px'}}>search</span>
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search employee by name, email, role..."
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm text-gray-600">
             <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>filter_list</span>
             <span className="font-medium">Filter By:</span>
           </div>
           <div className="relative">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
-              Department
-              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
-            </button>
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700"
+            >
+              {uniqueDepartments.map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
           </div>
           <div className="relative">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
-              Status
-              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
-            </button>
-          </div>
-          <div className="relative">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
-              Role
-              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
-            </button>
-          </div>
-          <div className="relative">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700">
-              Location
-              <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>expand_more</span>
-            </button>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:border-indigo-600/50 transition-colors text-gray-700"
+            >
+              <option value="All">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
           </div>
           <div className="ml-auto">
-            <button className="text-sm text-indigo-600 font-medium hover:underline">Clear all</button>
+            <button onClick={clearFilters} className="text-sm text-indigo-600 font-medium hover:underline">Clear all</button>
           </div>
         </div>
       </div>
@@ -102,8 +210,13 @@ const EmployeeList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {employees.map((employee) => (
-                <tr key={employee.id} className="group hover:bg-slate-50 transition-colors">
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-sm text-gray-500">Loading employees...</td>
+                </tr>
+              )}
+              {filteredEmployees.map((employee) => (
+                <tr key={employee.employeeId} className="group hover:bg-slate-50 transition-colors">
                   <td className="p-4 pl-6">
                     <input className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" type="checkbox" />
                   </td>
@@ -119,10 +232,10 @@ const EmployeeList = () => {
                     </div>
                   </td>
                   <td className="p-4 text-sm text-gray-600 font-mono">
-                    #{employee.id}
+                    #{employee.employeeId}
                   </td>
                   <td className="p-4 text-sm text-gray-600">
-                    {employee.role}
+                    {employee.jobTitle || employee.role}
                   </td>
                   <td className="p-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -156,12 +269,31 @@ const EmployeeList = () => {
                     </span>
                   </td>
                   <td className="p-4 text-right pr-6">
-                    <button className="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded-md hover:bg-gray-100">
-                      <span className="material-symbols-outlined" style={{fontSize: '20px'}}>more_vert</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Link to={`/employees/${employee.employeeId}`} className="text-gray-500 hover:text-indigo-600 transition-colors p-1 rounded-md hover:bg-gray-100" title="View">
+                        <span className="material-symbols-outlined" style={{fontSize: '20px'}}>visibility</span>
+                      </Link>
+                      <Link to={`/employees/edit/${employee.employeeId}`} className="text-gray-500 hover:text-indigo-600 transition-colors p-1 rounded-md hover:bg-gray-100" title="Edit">
+                        <span className="material-symbols-outlined" style={{fontSize: '20px'}}>edit</span>
+                      </Link>
+                      <button onClick={() => resetPassword(employee.employeeId)} className="text-gray-500 hover:text-amber-600 transition-colors p-1 rounded-md hover:bg-gray-100" title="Reset Password">
+                        <span className="material-symbols-outlined" style={{fontSize: '20px'}}>key</span>
+                      </button>
+                      <button onClick={() => toggleStatus(employee.employeeId, employee.status)} className="text-gray-500 hover:text-blue-600 transition-colors p-1 rounded-md hover:bg-gray-100" title="Toggle Status">
+                        <span className="material-symbols-outlined" style={{fontSize: '20px'}}>{employee.status === 'Active' ? 'toggle_on' : 'toggle_off'}</span>
+                      </button>
+                      <button onClick={() => removeEmployee(employee.employeeId)} className="text-gray-500 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-gray-100" title="Delete">
+                        <span className="material-symbols-outlined" style={{fontSize: '20px'}}>delete</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
+              {!loading && filteredEmployees.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-sm text-gray-500">No employees match your search/filter.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -169,7 +301,7 @@ const EmployeeList = () => {
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            Showing 1 to 5 of 847 employees
+            Showing {filteredEmployees.length} of {employees.length} employees
           </p>
           <div className="flex items-center gap-2">
             <button className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
