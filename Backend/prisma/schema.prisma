@@ -87,7 +87,7 @@ model PerformanceReview {
 }
 
 model PerformanceGoal {
-  id            String @id @map("_id")
+  id            String  @id @map("_id")
   employeeName  String
   employeeId    String
   goal          String
