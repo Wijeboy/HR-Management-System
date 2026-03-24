@@ -216,7 +216,7 @@ const GoalsKPIs = () => {
         <div className={sectionCardClass}>
           <p className="text-sm text-gray-500">Weighted Performance</p>
           <p className="mt-1 text-2xl font-bold text-gray-900">{summary.weightedPerformance.toFixed(1)}%</p>
-          <p className="mt-2 text-xs text-gray-500">Progress weighted by each goal's importance.</p>
+          <p className="mt-2 text-xs text-gray-500">Progress weighted by each goal&apos;s importance.</p>
         </div>
       </div>
 
