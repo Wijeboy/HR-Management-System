@@ -103,6 +103,7 @@ function App() {
               {/* Payroll */}
               <Route path="/payroll" element={<PayrollList />} />
               <Route path="/payroll/generate" element={<GeneratePayroll />} />
+              <Route path="/payroll/payslips" element={<PayslipView />} />
               <Route path="/payroll/payslip/:id" element={<PayslipView />} />
 
               {/* Recruitment */}

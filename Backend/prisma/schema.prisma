@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model PayrollEmployee {
+  id             String          @id @map("_id")
+  name           String
+  department     String
+  baseSalary     Float
+  fixedAllowance Float
+  paymentMethod  String
+  bankName       String
+  accountNo      String
+  payrollRecords PayrollRecord[]
+}
+
+model PayrollRecord {
+  id             String          @id @map("_id")
+  employeeId     String
+  employeeName   String
+  department     String
+  period         String
+  attendanceDays Int
+  leaveDays      Int
+  gross          Float
+  deductions     Float
+  net            Float
+  status         String
+  paymentDate    String
+  employee       PayrollEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([period])
+}
+
+model Payslip {
+  id              String            @id @map("_id")
+  payrollId       String
+  employeeId      String
+  employeeName    String
+  department      String
+  period          String
+  periodLabel     String
+  paymentDate     String
+  paymentMethod   String
+  bankName        String
+  accountNo       String
+  earnings        PayslipLineItem[]
+  deductions      PayslipLineItem[]
+  gross           Float
+  totalDeductions Float
+  net             Float
+  attendanceDays  Int
+  leaveDays       Int
+
+  @@index([employeeId, period])
+}
+
+type PayslipLineItem {
+  label  String
+  amount Float
+}
+
+model PerformanceReview {
+  id              String @id @map("_id")
+  employeeName    String
+  employeeId      String
+  department      String
+  reviewer        String
+  cycle           String
+  goalsScore      Float
+  competencyScore Float
+  behaviorScore   Float
+  finalRating     Float
+  recommendation  String
+  status          String
+
+  @@index([employeeId])
+  @@index([cycle])
+  @@index([status])
+}
+
+model PerformanceGoal {
+  id            String @id @map("_id")
+  employeeName  String
+  employeeId    String
+  goal          String
+  metric        String
+  target        Float
+  current       Float
+  weight        Float
+  dueDate       String
+  lowerIsBetter Boolean
+
+  @@index([employeeId])
+}
