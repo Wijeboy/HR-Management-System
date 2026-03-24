@@ -1,6 +1,21 @@
 import React from 'react';
 
 const Dashboard = () => {
+  const activityColorClasses = {
+    blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
+    green: { bg: 'bg-green-50', text: 'text-green-600' },
+    purple: { bg: 'bg-purple-50', text: 'text-purple-600' },
+    orange: { bg: 'bg-orange-50', text: 'text-orange-600' },
+  };
+
+  const deptDotClasses = {
+    indigo: 'bg-indigo-500',
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    purple: 'bg-purple-500',
+    orange: 'bg-orange-500',
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -92,8 +107,8 @@ const Dashboard = () => {
               { user: 'Emily Chen', action: 'submitted expense claim', time: 'Yesterday', icon: 'receipt', color: 'orange' },
             ].map((activity, idx) => (
               <div key={idx} className="flex items-center gap-4 py-3 border-b border-gray-100 last:border-0">
-                <div className={`flex items-center justify-center w-10 h-10 bg-${activity.color}-50 rounded-full`}>
-                  <span className={`material-symbols-outlined text-${activity.color}-600`}>{activity.icon}</span>
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${activityColorClasses[activity.color]?.bg || 'bg-slate-50'}`}>
+                  <span className={`material-symbols-outlined ${activityColorClasses[activity.color]?.text || 'text-slate-600'}`}>{activity.icon}</span>
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{activity.user}</p>
@@ -121,7 +136,7 @@ const Dashboard = () => {
             ].map((dept, idx) => (
               <div key={idx} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full bg-${dept.color}-500`}></div>
+                  <div className={`w-3 h-3 rounded-full ${deptDotClasses[dept.color] || 'bg-slate-500'}`}></div>
                   <span className="text-sm font-medium text-gray-900">{dept.name}</span>
                 </div>
                 <div className="flex items-center gap-3">

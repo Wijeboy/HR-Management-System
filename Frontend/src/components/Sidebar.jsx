@@ -17,12 +17,16 @@ const Sidebar = () => {
       label: 'Employees',
     },
     {
-      path: '/attendance',
+      // Employee → /attendance (check-in/out + own history)
+      // HR / Admin / Manager → /attendance/reports (daily overview of all employees)
+      path: user?.role === 'employee' ? '/attendance' : '/attendance/reports',
       icon: 'schedule',
       label: 'Attendance',
     },
     {
-      path: '/leave/requests',
+      // Employee → /leave/requests (balance cards + own history)
+      // HR → /leave/manage (approval inbox)
+      path: user?.role === 'employee' ? '/leave/requests' : '/leave/manage',
       icon: 'event',
       label: 'Leave Management',
     },
@@ -32,7 +36,9 @@ const Sidebar = () => {
       label: 'Payroll',
     },
     {
-      path: '/recruitment/jobs',
+      // Employee → /recruitment/applicants (job postings + apply + meeting calendar)
+      // HR / Admin / Manager → /recruitment/jobs (job vacancy portal + manage applicants)
+      path: user?.role === 'employee' ? '/recruitment/applicants' : '/recruitment/jobs',
       icon: 'work',
       label: 'Recruitment',
     },
@@ -57,6 +63,18 @@ const Sidebar = () => {
   ];
 
   const isActive = (path) => {
+    // Attendance tab: highlight for both role paths
+    if (path === '/attendance' || path === '/attendance/reports') {
+      return location.pathname.startsWith('/attendance');
+    }
+    // Leave tab: highlight for both role paths
+    if (path === '/leave/requests' || path === '/leave/manage') {
+      return location.pathname.startsWith('/leave');
+    }
+    // Recruitment tab: highlight for both role paths
+    if (path === '/recruitment/applicants' || path === '/recruitment/jobs') {
+      return location.pathname.startsWith('/recruitment');
+    }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
@@ -89,7 +107,7 @@ const Sidebar = () => {
             <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Main Menu</p>
             {mainMenuItems.map((item) => (
               <Link
-                key={item.path}
+                key={item.label}
                 to={item.path}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
                   isActive(item.path)

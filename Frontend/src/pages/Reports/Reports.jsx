@@ -1,6 +1,77 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Doughnut, Line } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
 const Reports = () => {
+  const [reports, setReports] = useState([
+    { id: 'RPT-001', name: 'Q1 Employee Performance', type: 'Performance', date: 'Mar 1, 2026', size: '2.4 MB', status: 'Ready' },
+    { id: 'RPT-002', name: 'February Attendance Report', type: 'Attendance', date: 'Feb 28, 2026', size: '1.8 MB', status: 'Ready' },
+    { id: 'RPT-003', name: 'Department Budget Analysis', type: 'Financial', date: 'Feb 15, 2026', size: '3.1 MB', status: 'Ready' },
+  ]);
+
+  const employeeGrowthData = useMemo(() => ({
+    labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+    datasets: [
+      {
+        label: 'Total Employees',
+        data: [790, 802, 815, 828, 839, 847],
+        borderColor: '#4f46e5',
+        backgroundColor: 'rgba(79, 70, 229, 0.15)',
+        fill: true,
+        tension: 0.35,
+      },
+    ],
+  }), []);
+
+  const departmentDistributionData = useMemo(() => ({
+    labels: ['Engineering', 'Sales', 'Support', 'Finance', 'HR'],
+    datasets: [
+      {
+        data: [245, 187, 156, 78, 89],
+        backgroundColor: ['#4f46e5', '#3b82f6', '#22c55e', '#a855f7', '#f97316'],
+        borderWidth: 0,
+      },
+    ],
+  }), []);
+
+  const generateReport = () => {
+    const id = `RPT-${String(reports.length + 1).padStart(3, '0')}`;
+    const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const item = {
+      id,
+      name: `Auto Report ${id}`,
+      type: 'General',
+      date,
+      size: '1.2 MB',
+      status: 'Ready',
+    };
+    setReports((prev) => [item, ...prev]);
+  };
+
+  const exportReportList = () => {
+    const header = 'Report ID,Report Name,Type,Generated,Size,Status';
+    const rows = reports.map((r) => [r.id, r.name, r.type, r.date, r.size, r.status].join(','));
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generated-reports.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -14,11 +85,11 @@ const Reports = () => {
             <span className="material-symbols-outlined text-xl">calendar_today</span>
             Last 30 Days
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <button onClick={exportReportList} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
             <span className="material-symbols-outlined text-xl">download</span>
             Export
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          <button onClick={generateReport} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
             <span className="material-symbols-outlined text-xl">add</span>
             Generate Report
           </button>
@@ -86,7 +157,16 @@ const Reports = () => {
             </button>
           </div>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p className="text-gray-400">Chart visualization will be displayed here</p>
+            <Line
+              data={employeeGrowthData}
+              options={{
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: { beginAtZero: false },
+                },
+              }}
+            />
           </div>
         </div>
 
@@ -102,7 +182,10 @@ const Reports = () => {
             </button>
           </div>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p className="text-gray-400">Chart visualization will be displayed here</p>
+            <Doughnut
+              data={departmentDistributionData}
+              options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }}
+            />
           </div>
         </div>
       </div>
@@ -126,12 +209,8 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {[
-                { name: 'Q1 Employee Performance', type: 'Performance', date: 'Mar 1, 2026', size: '2.4 MB', status: 'Ready' },
-                { name: 'February Attendance Report', type: 'Attendance', date: 'Feb 28, 2026', size: '1.8 MB', status: 'Ready' },
-                { name: 'Department Budget Analysis', type: 'Financial', date: 'Feb 15, 2026', size: '3.1 MB', status: 'Ready' },
-              ].map((report, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+              {reports.map((report) => (
+                <tr key={report.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-10 h-10 bg-blue-50 rounded-lg">
@@ -139,7 +218,7 @@ const Reports = () => {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900">{report.name}</p>
-                        <p className="text-xs text-gray-500">{report.date}</p>
+                        <p className="text-xs text-gray-500">{report.id}</p>
                       </div>
                     </div>
                   </td>
@@ -156,7 +235,7 @@ const Reports = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <button className="p-2 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-gray-100">
+                    <button onClick={exportReportList} className="p-2 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-gray-100">
                       <span className="material-symbols-outlined text-xl">download</span>
                     </button>
                   </td>
