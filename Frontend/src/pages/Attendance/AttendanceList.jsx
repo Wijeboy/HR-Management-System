@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { attendanceService } from '../../services/attendanceService';
 
@@ -85,7 +85,7 @@ const AttendanceList = () => {
   }, [employeeId, todayRecord]);
 
   // Fetch history
-  const fetchHistory = (page = 1) => {
+  const fetchHistory = useCallback((page = 1) => {
     setHistoryLoading(true);
     attendanceService
       .getHistory(employeeId, page, 10)
@@ -97,11 +97,11 @@ const AttendanceList = () => {
       })
       .catch(() => {})
       .finally(() => setHistoryLoading(false));
-  };
+  }, [employeeId]);
 
   useEffect(() => {
     if (employeeId) fetchHistory(1);
-  }, [employeeId, todayRecord]);
+  }, [employeeId, fetchHistory, todayRecord]);
 
   // Check-in / Check-out handler
   const handleCheckInOut = async () => {
