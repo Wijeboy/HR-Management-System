@@ -21,7 +21,7 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard Overview</h2>
-        <p className="text-gray-500">Welcome back, Admin. Here's what's happening today.</p>
+        <p className="text-gray-500">Welcome back, Admin. Here&apos;s what&apos;s happening today.</p>
       </div>
 
       {/* KPI Cards */}
@@ -168,7 +168,7 @@ const Dashboard = () => {
               <span className="material-symbols-outlined text-green-600">celebration</span>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-gray-900">New Employee Benefits</h3>
-                <p className="text-sm text-gray-600 mt-1">We're excited to announce enhanced health insurance and wellness programs.</p>
+                <p className="text-sm text-gray-600 mt-1">We&apos;re excited to announce enhanced health insurance and wellness programs.</p>
                 <p className="text-xs text-gray-500 mt-2">Posted 1 week ago</p>
               </div>
             </div>
