@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { notificationService } from '../services/notificationService';
@@ -12,7 +12,7 @@ const Header = () => {
   const pollRef = useRef(null);
 
   // Fetch notifications for current user
-  const fetchNotifications = () => {
+  const fetchNotifications = useCallback(() => {
     if (!user?.id) return;
     notificationService.getNotifications(user.id)
       .then((res) => {
@@ -20,14 +20,14 @@ const Header = () => {
         setUnreadCount(res.data.unreadCount || 0);
       })
       .catch(() => {});
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     fetchNotifications();
     // Poll every 30 seconds
     pollRef.current = setInterval(fetchNotifications, 30000);
     return () => clearInterval(pollRef.current);
-  }, [user?.id]);
+  }, [fetchNotifications]);
 
   const handleOpenNotifications = () => {
     setShowNotifications(!showNotifications);
