@@ -1,5 +1,4 @@
 import { prisma } from "../../lib/prisma.js";
-import { runtimeStore } from "../runtime/runtime.store.js";
 import { toNumber } from "../../utils/number.js";
 
 const getRatingBand = (rating) => {
@@ -112,27 +111,17 @@ const nextReviewId = async (cycle) => {
     .replace(/[^a-zA-Z0-9-]/g, "")
     .toUpperCase();
 
-  try {
-    const count = await prisma.performanceReview.count({
-      where: { id: { startsWith: `PRV-${token}-` } },
-    });
+  const count = await prisma.performanceReview.count({
+    where: { id: { startsWith: `PRV-${token}-` } },
+  });
 
-    return `PRV-${token}-${String(count + 1).padStart(3, "0")}`;
-  } catch {
-    const count = runtimeStore.performanceReviews.filter((review) => review.id.startsWith(`PRV-${token}-`)).length;
-    return `PRV-${token}-${String(count + 1).padStart(3, "0")}`;
-  }
+  return `PRV-${token}-${String(count + 1).padStart(3, "0")}`;
 };
 
 const nextGoalId = async () => {
-  let existing;
-  try {
-    existing = await prisma.performanceGoal.findMany({
-      select: { id: true },
-    });
-  } catch {
-    existing = runtimeStore.performanceGoals.map((goal) => ({ id: goal.id }));
-  }
+  const existing = await prisma.performanceGoal.findMany({
+    select: { id: true },
+  });
 
   const maxId = existing.reduce((max, goal) => {
     const raw = goal.id.startsWith("KPI-") ? goal.id.slice(4) : "";
@@ -147,16 +136,9 @@ const toBoolean = (value) => value === true || value === "true";
 
 export const performanceService = {
   async getReviews(query) {
-    let allReviews;
-    try {
-      allReviews = await prisma.performanceReview.findMany({
-        orderBy: [{ cycle: "desc" }, { id: "desc" }],
-      });
-    } catch {
-      allReviews = [...runtimeStore.performanceReviews].sort(
-        (left, right) => right.cycle.localeCompare(left.cycle) || right.id.localeCompare(left.id)
-      );
-    }
+    const allReviews = await prisma.performanceReview.findMany({
+      orderBy: [{ cycle: "desc" }, { id: "desc" }],
+    });
 
     const reviews = filterReviews(allReviews, query);
 
@@ -192,25 +174,13 @@ export const performanceService = {
       status: payload.status || "In Progress",
     };
 
-    try {
-      return await prisma.performanceReview.create({ data: review });
-    } catch {
-      runtimeStore.performanceReviews.unshift(review);
-      return review;
-    }
+    return prisma.performanceReview.create({ data: review });
   },
 
   async getGoals(query) {
-    let allGoals;
-    try {
-      allGoals = await prisma.performanceGoal.findMany({
-        orderBy: [{ dueDate: "asc" }, { id: "asc" }],
-      });
-    } catch {
-      allGoals = [...runtimeStore.performanceGoals].sort(
-        (left, right) => left.dueDate.localeCompare(right.dueDate) || left.id.localeCompare(right.id)
-      );
-    }
+    const allGoals = await prisma.performanceGoal.findMany({
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+    });
 
     const decorated = decorateGoals(allGoals);
     const filtered = filterGoals(decorated, query);
@@ -236,29 +206,17 @@ export const performanceService = {
       lowerIsBetter: toBoolean(payload.lowerIsBetter),
     };
 
-    try {
-      return await prisma.performanceGoal.create({ data: goal });
-    } catch {
-      runtimeStore.performanceGoals.push(goal);
-      return goal;
-    }
+    return prisma.performanceGoal.create({ data: goal });
   },
 
   async updateGoalCurrent(id, payload) {
-    try {
-      const result = await prisma.performanceGoal.updateMany({
-        where: { id },
-        data: { current: toNumber(payload.current) },
-      });
+    const result = await prisma.performanceGoal.updateMany({
+      where: { id },
+      data: { current: toNumber(payload.current) },
+    });
 
-      if (result.count === 0) return null;
+    if (result.count === 0) return null;
 
-      return prisma.performanceGoal.findUnique({ where: { id } });
-    } catch {
-      const goal = runtimeStore.performanceGoals.find((item) => item.id === id);
-      if (!goal) return null;
-      goal.current = toNumber(payload.current);
-      return goal;
-    }
+    return prisma.performanceGoal.findUnique({ where: { id } });
   },
 };

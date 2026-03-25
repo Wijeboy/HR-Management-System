@@ -1,7 +1,9 @@
-import { helpers, runtimeStore } from "../runtime/runtime.store.js";
+import { prisma } from "../../lib/prisma.js";
 
 const WORK_START_HOUR = 9;
 const LATE_THRESHOLD_MINUTES = 30;
+
+const dateOnly = (value = new Date()) => new Date(value).toISOString().split("T")[0];
 
 const paginate = (items, page = 1, limit = 10) => {
   const safePage = Math.max(1, page);
@@ -12,17 +14,11 @@ const paginate = (items, page = 1, limit = 10) => {
   return { records, total, page: safePage, totalPages };
 };
 
-const getEmployee = (employeeId) =>
-  runtimeStore.employees.find((employee) => employee.employeeId === employeeId && employee.isActive);
-
-const findAttendanceRecord = (employeeId, dateStr) =>
-  runtimeStore.attendanceRecords.find((record) => record.employeeId === employeeId && record.date === dateStr) || null;
-
-const getApprovedLeaveEmployeeIdsForDate = (dateStr) => {
+const getApprovedLeaveEmployeeIdsForDate = async (dateStr) => {
   const selectedDate = new Date(`${dateStr}T00:00:00`);
-  return runtimeStore.leaveRequests
+  const requests = await prisma.leaveRequest.findMany({ where: { status: "approved" } });
+  return requests
     .filter((request) => {
-      if (request.status !== "approved") return false;
       const startDate = new Date(request.startDate);
       const endDate = request.endDate ? new Date(request.endDate) : startDate;
       return startDate <= selectedDate && selectedDate <= endDate;
@@ -30,14 +26,17 @@ const getApprovedLeaveEmployeeIdsForDate = (dateStr) => {
     .map((request) => request.employeeId);
 };
 
+const findAttendanceRecord = (employeeId, dateStr) =>
+  prisma.attendanceRecord.findFirst({ where: { employeeId, date: dateStr } });
+
 export const attendanceService = {
-  checkIn(employeeId) {
-    const employee = getEmployee(employeeId);
+  async checkIn(employeeId) {
+    const employee = await prisma.user.findFirst({ where: { employeeId, isActive: true } });
     if (!employee) throw new Error("Employee not found");
 
     const today = new Date();
-    const dateStr = helpers.dateOnly(today);
-    const existing = findAttendanceRecord(employeeId, dateStr);
+    const dateStr = dateOnly(today);
+    const existing = await findAttendanceRecord(employeeId, dateStr);
 
     if (existing?.checkIn) throw new Error("Already checked in today");
 
@@ -48,7 +47,7 @@ export const attendanceService = {
         : "present";
 
     const nextRecord = {
-      _id: existing?._id || `att-${employeeId.toLowerCase()}-${dateStr}`,
+      id: existing?.id || `att-${employeeId.toLowerCase()}-${dateStr}`,
       employeeId,
       employeeName: employee.name,
       department: employee.department,
@@ -60,17 +59,25 @@ export const attendanceService = {
     };
 
     if (existing) {
-      Object.assign(existing, nextRecord);
-      return existing;
+      return prisma.attendanceRecord.update({
+        where: { id: existing.id },
+        data: {
+          employeeName: nextRecord.employeeName,
+          department: nextRecord.department,
+          checkIn: nextRecord.checkIn,
+          checkOut: null,
+          totalHours: 0,
+          status: nextRecord.status,
+        },
+      });
     }
 
-    runtimeStore.attendanceRecords.push(nextRecord);
-    return nextRecord;
+    return prisma.attendanceRecord.create({ data: nextRecord });
   },
 
-  checkOut(employeeId) {
-    const dateStr = helpers.dateOnly(new Date());
-    const record = findAttendanceRecord(employeeId, dateStr);
+  async checkOut(employeeId) {
+    const dateStr = dateOnly(new Date());
+    const record = await findAttendanceRecord(employeeId, dateStr);
 
     if (!record?.checkIn) throw new Error("No check-in record found for today");
     if (record.checkOut) throw new Error("Already checked out today");
@@ -78,24 +85,29 @@ export const attendanceService = {
     const checkOut = new Date();
     const totalHours = Number(((checkOut.getTime() - new Date(record.checkIn).getTime()) / 3600000).toFixed(2));
 
-    record.checkOut = checkOut.toISOString();
-    record.totalHours = Math.max(0, totalHours);
-    return record;
+    return prisma.attendanceRecord.update({
+      where: { id: record.id },
+      data: {
+        checkOut: checkOut.toISOString(),
+        totalHours: Math.max(0, totalHours),
+      },
+    });
   },
 
   getTodayStatus(employeeId) {
-    return findAttendanceRecord(employeeId, helpers.dateOnly(new Date()));
+    return findAttendanceRecord(employeeId, dateOnly(new Date()));
   },
 
-  getEmployeeHistory(employeeId, page = 1, limit = 10) {
-    const records = runtimeStore.attendanceRecords
-      .filter((record) => record.employeeId === employeeId)
-      .sort((a, b) => b.date.localeCompare(a.date));
+  async getEmployeeHistory(employeeId, page = 1, limit = 10) {
+    const records = await prisma.attendanceRecord.findMany({
+      where: { employeeId },
+      orderBy: { date: "desc" },
+    });
 
     return paginate(records, page, limit);
   },
 
-  getWeeklyAttendance(employeeId) {
+  async getWeeklyAttendance(employeeId) {
     const today = new Date();
     const dayOfWeek = today.getDay();
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -110,8 +122,8 @@ export const attendanceService = {
     for (let index = 0; index < 7; index += 1) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);
-      const dateStr = helpers.dateOnly(date);
-      const record = findAttendanceRecord(employeeId, dateStr);
+      const dateStr = dateOnly(date);
+      const record = await findAttendanceRecord(employeeId, dateStr);
       const hours = record?.totalHours || 0;
       totalWeekHours += hours;
       days.push({ label: labels[index], date: dateStr, hours });
@@ -123,27 +135,36 @@ export const attendanceService = {
     };
   },
 
-  getDailyAttendance(dateStr, department = "", status = "", page = 1, limit = 10) {
-    const approvedLeaveEmployeeIds = new Set(getApprovedLeaveEmployeeIdsForDate(dateStr));
-    const employees = runtimeStore.employees.filter((employee) => employee.isActive);
+  async getDailyAttendance(dateStr, department = "", status = "", page = 1, limit = 10) {
+    const approvedLeaveEmployeeIds = new Set(await getApprovedLeaveEmployeeIdsForDate(dateStr));
+    const users = await prisma.user.findMany({ where: { isActive: true } });
+    const employees = users.map((user) => ({
+      employeeId: user.employeeId,
+      name: user.name,
+      department: user.department,
+      isActive: user.isActive,
+    }));
     const filteredEmployees = department
       ? employees.filter((employee) => employee.department === department)
       : employees;
 
-    let records = filteredEmployees.map((employee) => {
-      const record = findAttendanceRecord(employee.employeeId, dateStr);
-      if (record) return { ...record };
-
-      return {
-        employeeId: employee.employeeId,
-        employeeName: employee.name,
-        department: employee.department,
-        checkIn: null,
-        checkOut: null,
-        totalHours: 0,
-        status: approvedLeaveEmployeeIds.has(employee.employeeId) ? "on_leave" : "absent",
-      };
-    });
+    let records = [];
+    for (const employee of filteredEmployees) {
+      const record = await findAttendanceRecord(employee.employeeId, dateStr);
+      if (record) {
+        records.push({ ...record });
+      } else {
+        records.push({
+          employeeId: employee.employeeId,
+          employeeName: employee.name,
+          department: employee.department,
+          checkIn: null,
+          checkOut: null,
+          totalHours: 0,
+          status: approvedLeaveEmployeeIds.has(employee.employeeId) ? "on_leave" : "absent",
+        });
+      }
+    }
 
     if (status) {
       records = records.filter((record) => record.status === status);
@@ -153,9 +174,10 @@ export const attendanceService = {
     return paginate(records, page, limit);
   },
 
-  getDailyStats(dateStr) {
-    const employees = runtimeStore.employees.filter((employee) => employee.isActive);
-    const records = this.getDailyAttendance(dateStr, "", "", 1, employees.length || 1).records;
+  async getDailyStats(dateStr) {
+    const employees = await prisma.user.findMany({ where: { isActive: true } });
+    const attendance = await this.getDailyAttendance(dateStr, "", "", 1, employees.length || 1);
+    const records = attendance.records;
     const total = records.length;
 
     const count = (value) => records.filter((record) => record.status === value).length;
@@ -179,7 +201,8 @@ export const attendanceService = {
     };
   },
 
-  getDepartments() {
-    return [...new Set(runtimeStore.employees.filter((employee) => employee.isActive).map((employee) => employee.department))];
+  async getDepartments() {
+    const users = await prisma.user.findMany({ where: { isActive: true }, select: { department: true } });
+    return [...new Set(users.map((user) => user.department))];
   },
 };

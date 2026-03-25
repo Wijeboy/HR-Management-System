@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -8,40 +9,60 @@ const Login = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
 
-  const dummyUsers = [
-    { role: 'admin',    email: 'admin@company.com',    password: 'admin123',    name: 'Admin User',         department: 'IT',               id: 'user_admin_001',    employeeId: 'EMP001' },
-    { role: 'hr',       email: 'hr@company.com',       password: 'hr123',       name: 'HR Manager',         department: 'Human Resources',  id: 'user_hr_001',       employeeId: 'EMP002' },
-    { role: 'manager',  email: 'manager@company.com',  password: 'manager123',  name: 'Department Manager', department: 'Engineering',       id: 'user_manager_001',  employeeId: 'EMP003' },
-    { role: 'employee', email: 'employee@company.com', password: 'employee123', name: 'John Doe',           department: 'Sales',            id: 'user_employee_001', employeeId: 'EMP004' },
+  const demoCredentials = [
+    { role: 'admin', email: 'admin@company.com', password: 'admin' },
+    { role: 'hr', email: 'hr@company.com', password: 'hr' },
+    { role: 'manager', email: 'manager@company.com', password: 'manager' },
+    { role: 'employee', email: 'employee@company.com', password: 'employee' },
   ];
 
-  const handleQuickLogin = (userType) => {
-    const u = dummyUsers.find((d) => d.role === userType);
-    if (u) { setEmail(u.email); setPassword(u.password); setSelectedRole(u.role); }
+  const loginWithCredential = async (credential) => {
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await authService.login({
+        email: credential.email.trim(),
+        password: credential.password,
+        role: credential.role || undefined,
+      });
+
+      const user = response?.data?.user;
+      const token = response?.data?.token;
+
+      if (user && token) {
+        login(user, token);
+        return;
+      }
+
+      setError('Invalid login response from server');
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Invalid email or password');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleQuickLogin = async (userType) => {
+    const u = demoCredentials.find((d) => d.role === userType);
+    if (!u) return;
+
+    setEmail(u.email);
+    setPassword(u.password);
+    setSelectedRole(u.role);
+    await loginWithCredential(u);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    const u = dummyUsers.find(
-      (d) => d.email === email.trim() && d.password === password
-    );
-
-    if (u) {
-      login({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        department: u.department,
-        employeeId: u.employeeId,
-      });
-    } else {
-      setError('Invalid email or password');
-    }
+    await loginWithCredential({
+      email,
+      password,
+      role: selectedRole || undefined,
+    });
   };
 
   return (
@@ -56,10 +77,10 @@ const Login = () => {
         </div>
 
         <div className="px-8 pb-4">
-          <p className="text-xs font-medium text-gray-500 mb-3 text-center">Quick Login (Demo Accounts)</p>
+          <p className="text-xs font-medium text-gray-500 mb-3 text-center">One-click Role Login</p>
           <div className="grid grid-cols-2 gap-2">
             {[['admin','🔑 Admin'],['hr','👤 HR Manager'],['manager','📊 Manager'],['employee','👨‍💼 Employee']].map(([role, label]) => (
-              <button key={role} type="button" onClick={() => handleQuickLogin(role)}
+              <button key={role} type="button" disabled={isSubmitting} onClick={() => handleQuickLogin(role)}
                 className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 text-gray-700 transition-colors">
                 {label}
               </button>
@@ -117,19 +138,19 @@ const Login = () => {
             <label className="ml-2 block text-sm text-gray-700" htmlFor="remember">Remember me for 30 days</label>
           </div>
 
-          <button type="submit"
+          <button type="submit" disabled={isSubmitting}
             className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 transition-colors">
             <span className="material-symbols-outlined text-[20px]">login</span>
-            Sign in to workspace
+            {isSubmitting ? 'Signing in...' : 'Sign in to workspace'}
           </button>
 
           <div className="pt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-xs font-semibold text-blue-900 mb-2">Demo Credentials:</p>
+            <p className="text-xs font-semibold text-blue-900 mb-2">Demo Credentials (must exist in DB):</p>
             <div className="space-y-1 text-xs text-blue-800">
-              <div><strong>Admin:</strong> admin@company.com / admin123</div>
-              <div><strong>HR:</strong> hr@company.com / hr123</div>
-              <div><strong>Manager:</strong> manager@company.com / manager123</div>
-              <div><strong>Employee:</strong> employee@company.com / employee123</div>
+              <div><strong>Admin:</strong> admin@company.com / admin</div>
+              <div><strong>HR:</strong> hr@company.com / hr</div>
+              <div><strong>Manager:</strong> manager@company.com / manager</div>
+              <div><strong>Employee:</strong> employee@company.com / employee</div>
             </div>
           </div>
         </form>

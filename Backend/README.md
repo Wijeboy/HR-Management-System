@@ -17,7 +17,7 @@ npm run dev
 ```
 
 Before running `db:setup`, create `Backend/.env` from `Backend/.env.example` and set:
-- `DATABASE_URL` to your MongoDB connection string
+- `MONGO_URI` to your MongoDB connection string
 - `FRONTEND_URL` to one or more allowed origins (comma-separated), for example `http://localhost:5173,http://127.0.0.1:5173`
 
 Server default: `http://localhost:5020`

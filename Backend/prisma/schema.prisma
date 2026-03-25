@@ -4,7 +4,97 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
+  url      = env("MONGO_URI")
+}
+
+model User {
+  id         String   @id @map("_id")
+  employeeId String   @unique
+  name       String
+  email      String   @unique
+  password   String
+  role       String
+  department String
+  jobTitle   String?
+  phone      String?
+  location   String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([role])
+  @@index([department])
+}
+
+model AttendanceRecord {
+  id           String   @id @map("_id")
+  employeeId   String
+  employeeName String
+  department   String
+  date         String
+  checkIn      String?
+  checkOut     String?
+  totalHours   Float    @default(0)
+  status       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([date])
+  @@index([status])
+}
+
+model LeaveBalance {
+  id           String   @id @map("_id")
+  employeeId   String
+  year         Int
+  medical      Int      @default(12)
+  vacation     Int      @default(18)
+  medicalUsed  Int      @default(0)
+  vacationUsed Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([employeeId, year])
+}
+
+model LeaveRequest {
+  id                 String   @id @map("_id")
+  employeeId         String
+  employeeName       String
+  department         String
+  leaveType          String
+  startDate          String
+  endDate            String?
+  durationDays       Int
+  reason             String
+  status             String
+  supportingDocument String?
+  documentMimeType   String?
+  reviewedBy         String?
+  reviewedAt         String?
+  hrComment          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Notification {
+  id            String   @id @map("_id")
+  recipientId   String
+  recipientRole String
+  message       String
+  type          String
+  relatedLeaveId String?
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([recipientId])
+  @@index([read])
 }
 
 model PayrollEmployee {
