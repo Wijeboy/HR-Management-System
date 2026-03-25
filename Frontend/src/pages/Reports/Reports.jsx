@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,40 +10,144 @@ import {
   Legend,
 } from 'chart.js';
 import { Doughnut, Line } from 'react-chartjs-2';
+import { attendanceService } from '../../services/attendanceService';
+import apiClient from '../../services/api';
+import { userService } from '../../services/userService';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
 const Reports = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    totalEmployees: 0,
+    attendanceRate: 0,
+    totalPayroll: 0,
+    turnoverRate: 0,
+  });
+  const [prevMetrics, setPrevMetrics] = useState(null);
+  const [users, setUsers] = useState([]);
+
   const [reports, setReports] = useState([
     { id: 'RPT-001', name: 'Q1 Employee Performance', type: 'Performance', date: 'Mar 1, 2026', size: '2.4 MB', status: 'Ready' },
     { id: 'RPT-002', name: 'February Attendance Report', type: 'Attendance', date: 'Feb 28, 2026', size: '1.8 MB', status: 'Ready' },
     { id: 'RPT-003', name: 'Department Budget Analysis', type: 'Financial', date: 'Feb 15, 2026', size: '3.1 MB', status: 'Ready' },
   ]);
 
-  const employeeGrowthData = useMemo(() => ({
-    labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
-    datasets: [
-      {
-        label: 'Total Employees',
-        data: [790, 802, 815, 828, 839, 847],
-        borderColor: '#4f46e5',
-        backgroundColor: 'rgba(79, 70, 229, 0.15)',
-        fill: true,
-        tension: 0.35,
-      },
-    ],
-  }), []);
+  const fetchReportData = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const [usersRes, statsRes, payrollRes] = await Promise.all([
+        userService.getUsers(),
+        attendanceService.getDailyStats(today),
+        apiClient.get('/payroll/records', { params: { page: 1, limit: 500 } }),
+      ]);
+
+      const usersList = usersRes?.data?.users || [];
+      setUsers(usersList);
+
+      const totalEmployees = Number(usersRes?.data?.total || usersList.length || 0);
+
+      const dailyStats = statsRes?.data?.stats || {};
+      const present = Number(dailyStats.present || 0);
+      const late = Number(dailyStats.late || 0);
+      const total = Number(dailyStats.total || totalEmployees || 0);
+      const attendanceRate = total > 0 ? Number((((present + late) / total) * 100).toFixed(1)) : 0;
+
+      const payrollSummary = payrollRes?.data?.summary || {};
+      const totalPayroll = Number(payrollSummary.totalNet || 0);
+
+      const inactiveCount = usersList.filter((user) => String(user.status).toLowerCase() === 'inactive').length;
+      const turnoverRate = totalEmployees > 0 ? Number(((inactiveCount / totalEmployees) * 100).toFixed(1)) : 0;
+
+      const snapshot = { totalEmployees, attendanceRate, totalPayroll, turnoverRate };
+      setPrevMetrics((prev) => prev || snapshot);
+      setMetrics(snapshot);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]);
+
+  const pctDelta = (current, previous) => {
+    const prev = Number(previous || 0);
+    const curr = Number(current || 0);
+    if (prev <= 0) return 0;
+    return Number((((curr - prev) / prev) * 100).toFixed(1));
+  };
+
+  const deltas = useMemo(() => {
+    const prev = prevMetrics || metrics;
+    return {
+      employees: pctDelta(metrics.totalEmployees, prev.totalEmployees),
+      attendance: pctDelta(metrics.attendanceRate, prev.attendanceRate),
+      payroll: pctDelta(metrics.totalPayroll, prev.totalPayroll),
+      turnover: pctDelta(metrics.turnoverRate, prev.turnoverRate),
+    };
+  }, [metrics, prevMetrics]);
+
+  const formatDelta = (value) => `${value > 0 ? '+' : ''}${value}%`;
+  const deltaClass = (value) => (value >= 0 ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100');
+
+  const employeeGrowthData = useMemo(() => {
+    const labels = [];
+    const data = [];
+    const now = new Date();
+
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      labels.push(monthDate.toLocaleString('en-US', { month: 'short' }));
+
+      const count = users.filter((user) => {
+        if (!user.createdAt) return true;
+        return new Date(user.createdAt).getTime() <= monthEnd.getTime();
+      }).length;
+
+      data.push(count);
+    }
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Total Employees',
+          data,
+          borderColor: '#4f46e5',
+          backgroundColor: 'rgba(79, 70, 229, 0.15)',
+          fill: true,
+          tension: 0.35,
+        },
+      ],
+    };
+  }, [users]);
 
   const departmentDistributionData = useMemo(() => ({
-    labels: ['Engineering', 'Sales', 'Support', 'Finance', 'HR'],
+    labels: (() => {
+      const counts = users.reduce((acc, user) => {
+        const key = user.department || 'Unassigned';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+      return Object.keys(counts).length > 0 ? Object.keys(counts) : ['No Data'];
+    })(),
     datasets: [
       {
-        data: [245, 187, 156, 78, 89],
+        data: (() => {
+          const counts = users.reduce((acc, user) => {
+            const key = user.department || 'Unassigned';
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+          }, {});
+          return Object.keys(counts).length > 0 ? Object.values(counts) : [1];
+        })(),
         backgroundColor: ['#4f46e5', '#3b82f6', '#22c55e', '#a855f7', '#f97316'],
         borderWidth: 0,
       },
     ],
-  }), []);
+  }), [users]);
 
   const generateReport = () => {
     const id = `RPT-${String(reports.length + 1).padStart(3, '0')}`;
@@ -103,10 +207,10 @@ const Reports = () => {
             <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-lg">
               <span className="material-symbols-outlined text-2xl text-blue-600">group</span>
             </div>
-            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">+12%</span>
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${deltaClass(deltas.employees)}`}>{formatDelta(deltas.employees)}</span>
           </div>
           <p className="text-sm font-medium text-gray-500 mt-4">Total Employees</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">847</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '...' : metrics.totalEmployees}</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
@@ -114,10 +218,10 @@ const Reports = () => {
             <div className="flex items-center justify-center w-12 h-12 bg-green-50 rounded-lg">
               <span className="material-symbols-outlined text-2xl text-green-600">trending_up</span>
             </div>
-            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">+8%</span>
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${deltaClass(deltas.attendance)}`}>{formatDelta(deltas.attendance)}</span>
           </div>
           <p className="text-sm font-medium text-gray-500 mt-4">Attendance Rate</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">95.8%</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '...' : `${metrics.attendanceRate}%`}</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
@@ -125,10 +229,10 @@ const Reports = () => {
             <div className="flex items-center justify-center w-12 h-12 bg-purple-50 rounded-lg">
               <span className="material-symbols-outlined text-2xl text-purple-600">payments</span>
             </div>
-            <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">+5%</span>
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${deltaClass(deltas.payroll)}`}>{formatDelta(deltas.payroll)}</span>
           </div>
           <p className="text-sm font-medium text-gray-500 mt-4">Total Payroll</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">$8.9M</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '...' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(metrics.totalPayroll)}</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
@@ -136,10 +240,10 @@ const Reports = () => {
             <div className="flex items-center justify-center w-12 h-12 bg-orange-50 rounded-lg">
               <span className="material-symbols-outlined text-2xl text-orange-600">person_off</span>
             </div>
-            <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded-full">+2%</span>
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${deltaClass(deltas.turnover)}`}>{formatDelta(deltas.turnover)}</span>
           </div>
           <p className="text-sm font-medium text-gray-500 mt-4">Turnover Rate</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">4.2%</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '...' : `${metrics.turnoverRate}%`}</p>
         </div>
       </div>
 

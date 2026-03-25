@@ -121,7 +121,7 @@ function App() {
               <Route path="/reports" element={<RoleGuard allowedRoles={ROLE_ACCESS.reports}><Reports /></RoleGuard>} />
 
               {/* Settings */}
-              <Route path="/profile" element={<RoleGuard allowedRoles={ROLE_ACCESS.settings}><Profile /></RoleGuard>} />
+              <Route path="/profile" element={<RoleGuard allowedRoles={ROLE_ACCESS.profile}><Profile /></RoleGuard>} />
               <Route path="/settings" element={<RoleGuard allowedRoles={ROLE_ACCESS.settings}><Settings /></RoleGuard>} />
             </Route>
           </Route>

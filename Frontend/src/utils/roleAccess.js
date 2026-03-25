@@ -24,7 +24,8 @@ export const ROLE_ACCESS = {
   performanceGoals: ['admin', 'hr', 'manager', 'employee'],
 
   reports: ['admin', 'hr', 'manager'],
-  settings: ['admin', 'hr', 'manager', 'employee'],
+  profile: ['admin', 'hr', 'manager', 'employee'],
+  settings: ['admin'],
 };
 
 export const canAccess = (role, permission) => {

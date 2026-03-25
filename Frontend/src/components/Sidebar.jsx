@@ -134,23 +134,25 @@ const Sidebar = () => {
           </nav>
 
           {/* Management Section */}
-          <nav className="flex flex-col gap-1">
-            <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Management</p>
-            {managementItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
-                  isActive(item.path)
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                <span className="material-symbols-outlined text-xl">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </Link>
-            ))}
-          </nav>
+          {managementItems.length > 0 && (
+            <nav className="flex flex-col gap-1">
+              <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Management</p>
+              {managementItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                    isActive(item.path)
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-xl">{item.icon}</span>
+                  <span className="text-sm font-medium">{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+          )}
         </div>
       </div>
     </aside>
