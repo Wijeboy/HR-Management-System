@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { attendanceService } from '../../services/attendanceService';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatTime = (date) => {
@@ -23,6 +24,17 @@ const formatDisplayDate = (dateStr) => {
 };
 
 const toInputDate = (date) => date.toISOString().split('T')[0];
+
+const isTodayDate = (dateStr) => dateStr === toInputDate(new Date());
+
+const computeLiveHours = (record, now = new Date()) => {
+  if (!record?.checkIn) return 0;
+  if (record?.checkOut) return Number(record.totalHours || 0);
+
+  const diffMs = now.getTime() - new Date(record.checkIn).getTime();
+  const hours = Math.max(0, diffMs / 3600000);
+  return Number(hours.toFixed(2));
+};
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -65,6 +77,7 @@ const StatCard = ({ label, value, pct, icon, color }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const AttendanceReports = () => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(toInputDate(new Date()));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [stats, setStats] = useState(null);
@@ -78,6 +91,13 @@ const AttendanceReports = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
+  const [myRecord, setMyRecord] = useState(null);
+  const [myAttendanceBusy, setMyAttendanceBusy] = useState(false);
+  const [myAttendanceError, setMyAttendanceError] = useState('');
+  const [rowActionBusy, setRowActionBusy] = useState({});
+  const [liveNow, setLiveNow] = useState(new Date());
+
+  const myEmployeeId = user?.employeeId || '';
 
   // Fetch stats
   const fetchStats = useCallback(() => {
@@ -104,8 +124,67 @@ const AttendanceReports = () => {
     }).catch(() => {}).finally(() => setLoading(false));
   }, [selectedDate, filterDept, filterStatus]);
 
+  const fetchMyStatus = useCallback(() => {
+    if (!myEmployeeId) {
+      setMyRecord(null);
+      return;
+    }
+
+    attendanceService
+      .getTodayStatus(myEmployeeId)
+      .then((res) => setMyRecord(res.data?.record || null))
+      .catch(() => setMyRecord(null));
+  }, [myEmployeeId]);
+
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { fetchRecords(1); }, [fetchRecords]);
+  useEffect(() => { fetchMyStatus(); }, [fetchMyStatus]);
+
+  useEffect(() => {
+    const id = setInterval(() => setLiveNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const refreshDashboard = useCallback(() => {
+    fetchStats();
+    fetchRecords(page);
+    fetchMyStatus();
+  }, [fetchStats, fetchRecords, fetchMyStatus, page]);
+
+  const handleMyAttendanceToggle = async () => {
+    if (!myEmployeeId) return;
+    setMyAttendanceError('');
+    setMyAttendanceBusy(true);
+
+    try {
+      if (myRecord?.checkIn && !myRecord?.checkOut) {
+        await attendanceService.checkOut(myEmployeeId);
+      } else {
+        await attendanceService.checkIn(myEmployeeId);
+      }
+      refreshDashboard();
+    } catch (error) {
+      setMyAttendanceError(error?.response?.data?.message || 'Failed to update attendance');
+    } finally {
+      setMyAttendanceBusy(false);
+    }
+  };
+
+  const handleManageEmployeeAttendance = async (employeeId, action) => {
+    setRowActionBusy((prev) => ({ ...prev, [employeeId]: true }));
+    try {
+      if (action === 'checkout') {
+        await attendanceService.checkOut(employeeId);
+      } else {
+        await attendanceService.checkIn(employeeId);
+      }
+      refreshDashboard();
+    } catch {
+      // Keep table usable even when one row action fails.
+    } finally {
+      setRowActionBusy((prev) => ({ ...prev, [employeeId]: false }));
+    }
+  };
 
   // Filter records by search
   const filteredRecords = records.filter((r) => {
@@ -249,6 +328,29 @@ const AttendanceReports = () => {
       </div>
 
       {/* ── Stat Cards ────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">My Attendance</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {myRecord?.checkOut
+              ? `Checked out at ${formatTime(myRecord.checkOut)}`
+              : myRecord?.checkIn
+                ? `Checked in at ${formatTime(myRecord.checkIn)} • Live: ${formatHours(computeLiveHours(myRecord, liveNow))}`
+                : 'Not checked in yet'}
+          </p>
+          {myAttendanceError ? <p className="text-xs text-red-600 mt-1">{myAttendanceError}</p> : null}
+        </div>
+        <button
+          onClick={handleMyAttendanceToggle}
+          disabled={myAttendanceBusy || !!myRecord?.checkOut || !myEmployeeId}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+            myRecord?.checkIn && !myRecord?.checkOut ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+          }`}
+        >
+          {myAttendanceBusy ? 'Please wait...' : myRecord?.checkIn && !myRecord?.checkOut ? 'My Check Out' : 'My Check In'}
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard label="Present" value={stats?.present ?? '—'} pct={stats?.presentPct ?? '—'} icon="check_circle" color="green" />
         <StatCard label="Absent" value={stats?.absent ?? '—'} pct={stats?.absentPct ?? '—'} icon="cancel" color="red" />
@@ -297,23 +399,23 @@ const AttendanceReports = () => {
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
-                {['Employee', 'Department', 'Check In', 'Check Out', 'Work Hours', 'Status'].map((h) => (
+                {['Employee', 'Department', 'Check In', 'Check Out', 'Work Hours', 'Status', 'Action'].map((h) => (
                   <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-400">
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-400">
                   <span className="material-symbols-outlined animate-spin text-2xl">refresh</span>
                 </td></tr>
               ) : filteredRecords.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm">
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-400 text-sm">
                   No records found for selected date / filters.
                 </td></tr>
               ) : (
                 filteredRecords.map((rec, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <tr key={rec.employeeId || idx} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm flex-shrink-0">
@@ -325,8 +427,29 @@ const AttendanceReports = () => {
                     <td className="px-6 py-4 text-sm text-gray-600">{rec.department}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{formatTime(rec.checkIn)}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{formatTime(rec.checkOut)}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatHours(rec.totalHours)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatHours(computeLiveHours(rec, liveNow))}</td>
                     <td className="px-6 py-4"><StatusBadge status={rec.status} /></td>
+                    <td className="px-6 py-4">
+                      {!isTodayDate(selectedDate) || rec.status === 'on_leave' || rec.checkOut ? (
+                        <span className="text-xs text-gray-400">—</span>
+                      ) : rec.checkIn ? (
+                        <button
+                          onClick={() => handleManageEmployeeAttendance(rec.employeeId, 'checkout')}
+                          disabled={!!rowActionBusy[rec.employeeId]}
+                          className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60"
+                        >
+                          {rowActionBusy[rec.employeeId] ? 'Working...' : 'Check Out'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleManageEmployeeAttendance(rec.employeeId, 'checkin')}
+                          disabled={!!rowActionBusy[rec.employeeId]}
+                          className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
+                        >
+                          {rowActionBusy[rec.employeeId] ? 'Working...' : 'Check In'}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
