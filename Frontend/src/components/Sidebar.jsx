@@ -1,20 +1,25 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { canAccess } from '../utils/roleAccess';
 
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
+
+  const role = user?.role;
 
   const mainMenuItems = [
     {
       path: '/dashboard',
       icon: 'dashboard',
       label: 'Dashboard',
+      visible: canAccess(role, 'dashboard'),
     },
     {
       path: '/employees',
       icon: 'group',
       label: 'Employees',
+      visible: canAccess(role, 'employeesView'),
     },
     {
       // Employee → /attendance (check-in/out + own history)
@@ -22,6 +27,7 @@ const Sidebar = () => {
       path: user?.role === 'employee' ? '/attendance' : '/attendance/reports',
       icon: 'schedule',
       label: 'Attendance',
+      visible: canAccess(role, 'attendanceSelf') || canAccess(role, 'attendanceReports'),
     },
     {
       // Employee → /leave/requests (balance cards + own history)
@@ -29,11 +35,13 @@ const Sidebar = () => {
       path: user?.role === 'employee' ? '/leave/requests' : '/leave/manage',
       icon: 'event',
       label: 'Leave Management',
+      visible: canAccess(role, 'leaveRequests') || canAccess(role, 'leaveManage'),
     },
     {
-      path: '/payroll',
+      path: user?.role === 'employee' ? '/payroll/payslips' : '/payroll',
       icon: 'payments',
       label: 'Payroll',
+      visible: canAccess(role, 'payrollView') || canAccess(role, 'payrollPayslip'),
     },
     {
       // Employee → /recruitment/applicants (job postings + apply + meeting calendar)
@@ -41,26 +49,30 @@ const Sidebar = () => {
       path: user?.role === 'employee' ? '/recruitment/applicants' : '/recruitment/jobs',
       icon: 'work',
       label: 'Recruitment',
+      visible: canAccess(role, 'recruitmentApplicants') || canAccess(role, 'recruitmentJobs'),
     },
     {
-      path: '/performance/reviews',
+      path: canAccess(role, 'performanceReviews') ? '/performance/reviews' : '/performance/goals',
       icon: 'trending_up',
       label: 'Performance',
+      visible: canAccess(role, 'performanceReviews') || canAccess(role, 'performanceGoals'),
     },
-  ];
+  ].filter((item) => item.visible);
 
   const managementItems = [
     {
       path: '/reports',
       icon: 'bar_chart',
       label: 'Reports',
+      visible: canAccess(role, 'reports'),
     },
     {
       path: '/settings',
       icon: 'settings',
       label: 'Settings',
+      visible: canAccess(role, 'settings'),
     },
-  ];
+  ].filter((item) => item.visible);
 
   const isActive = (path) => {
     // Attendance tab: highlight for both role paths

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import apiClient from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { leaveService } from '../../services/leaveService';
 import { recruitmentService } from '../../services/recruitmentService';
 import { userService } from '../../services/userService';
@@ -47,6 +48,7 @@ const formatRelativeTime = (value) => {
 };
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -212,12 +214,14 @@ const Dashboard = () => {
   const requestsDelta = deltaBadge(deltas.activeRequests);
   const positionsDelta = deltaBadge(deltas.openPositions);
 
+  const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard Overview</h2>
-        <p className="text-gray-500">Welcome back, Admin. Here&apos;s what&apos;s happening today.</p>
+        <p className="text-gray-500">Welcome back, {user?.name || roleLabel}. Here&apos;s what&apos;s happening for {roleLabel} today.</p>
         <p className="text-xs text-gray-400">
           {lastUpdated ? `Last updated ${formatRelativeTime(lastUpdated)}` : 'Loading...'}
           {loadError ? ` • ${loadError}` : ''}
