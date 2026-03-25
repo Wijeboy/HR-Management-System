@@ -52,7 +52,7 @@ const EmployeeJobCard = ({ job, onApply, onDownload }) => (
 
       {/* Buttons row */}
       <div className="mt-3 flex gap-2">
-        <button onClick={() => onDownload(job.attachmentFile)}
+        <button onClick={() => onDownload(job._id)}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors">
           <span className="material-symbols-outlined text-[14px]">download</span>
           View Details
@@ -206,7 +206,7 @@ const Applicants = () => {
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
-  const handleDownload = (filename) => window.open(recruitmentService.getFileUrl(filename), '_blank');
+  const handleDownload = (jobId) => window.open(recruitmentService.getJobAttachmentUrl(jobId), '_blank');
 
   const handleApplySuccess = () => {
     setApplyTarget(null);

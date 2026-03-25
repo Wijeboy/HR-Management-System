@@ -1,6 +1,6 @@
 import apiClient from './api';
 
-const BASE = 'http://localhost:5000'; // for direct file download links
+const BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5050';
 
 export const recruitmentService = {
   // ── Job Postings ────────────────────────────────────────────────────────────
@@ -43,5 +43,6 @@ export const recruitmentService = {
     apiClient.get(`/recruitment/schedules/${employeeId}`, { params: { search } }),
 
   // ── File download URL helper ────────────────────────────────────────────────
-  getFileUrl: (filename) => `${BASE}/uploads/${filename}`,
+  getJobAttachmentUrl: (jobId) => `${BASE}/api/recruitment/jobs/${jobId}/attachment`,
+  getApplicantCvUrl: (applicantId) => `${BASE}/api/recruitment/applicants/${applicantId}/cv`,
 };

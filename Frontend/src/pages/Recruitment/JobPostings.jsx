@@ -71,7 +71,7 @@ const HRJobCard = ({ job, onEdit, onDelete, onDownload }) => (
       </div>
 
       <button
-        onClick={() => onDownload(job.attachmentFile)}
+        onClick={() => onDownload(job._id)}
         className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-4 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm font-semibold hover:bg-indigo-100 transition-colors"
       >
         <span className="material-symbols-outlined text-[16px]">download</span>
@@ -367,8 +367,8 @@ const JobPostings = () => {
 
   const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3500); };
 
-  const handleDownload = (filename) => {
-    window.open(recruitmentService.getFileUrl(filename), '_blank');
+  const handleDownload = (jobId) => {
+    window.open(recruitmentService.getJobAttachmentUrl(jobId), '_blank');
   };
 
   const handleDeleteJob = async () => {
@@ -498,7 +498,7 @@ const JobPostings = () => {
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">{app.applicantName}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{app.email}</td>
                     <td className="px-6 py-4">
-                      <button onClick={() => window.open(recruitmentService.getFileUrl(app.cvFile), '_blank')}
+                      <button onClick={() => window.open(recruitmentService.getApplicantCvUrl(app._id), '_blank')}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors">
                         <span className="material-symbols-outlined text-[14px]">download</span>
                         View CV

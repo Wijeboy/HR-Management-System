@@ -5,6 +5,7 @@ import { leaveRouter } from "../modules/leave/leave.routes.js";
 import { notificationRouter } from "../modules/notifications/notifications.routes.js";
 import { payrollRouter } from "../modules/payroll/payroll.routes.js";
 import { performanceRouter } from "../modules/performance/performance.routes.js";
+import { recruitmentRouter } from "../modules/recruitment/recruitment.routes.js";
 import { usersRouter } from "../modules/users/users.routes.js";
 
 const apiRouter = Router();
@@ -18,6 +19,7 @@ apiRouter.get("/health", (_req, res) => {
       notifications: true,
       payroll: true,
       performance: true,
+      recruitment: true,
     },
   });
 });
@@ -28,6 +30,7 @@ apiRouter.use("/leave", leaveRouter);
 apiRouter.use("/notifications", notificationRouter);
 apiRouter.use("/payroll", payrollRouter);
 apiRouter.use("/performance", performanceRouter);
+apiRouter.use("/recruitment", recruitmentRouter);
 apiRouter.use("/users", usersRouter);
 
 export { apiRouter };

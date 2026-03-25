@@ -190,3 +190,4 @@ model PerformanceGoal {
 
   @@index([employeeId])
 }
+
